@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="Writing on verification engineering and hardware projects, by Dharma Teja Gurram.">
+  <title>Writing — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="index.html">Home</a>
+        <a href="projects.html">Projects</a>
+        <a href="blog.html" aria-current="page">Writing</a>
+        <a href="index.html#about">About</a>
+        <a class="btn" href="sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="wrap">
+        <div>
+          <p class="eyebrow">Writing</p>
+          <h1>Notes on verification and hardware.</h1>
+          <p class="lede">Project writeups with real data, and short essays on the engineering judgment behind pre-submit gates and regression reporting.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <ul class="posts">
+          <li class="post-item">
+            <p class="post-kicker"><span>Essay</span><span>Verification engineering</span></p>
+            <h2><a href="blog/pre-submit-quality-gates.html">Why pre-submit beats post-submit</a></h2>
+            <p>What earns a place in a blocking gate, rejection messages as UI, and the fail-open vs. fail-closed decision nobody writes down.</p>
+          </li>
+          <li class="post-item">
+            <p class="post-kicker"><span>Essay</span><span>Verification engineering</span></p>
+            <h2><a href="blog/regression-reports.html">What makes a regression report worth reading</a></h2>
+            <p>New vs. known failures, clustering by cause, flakiness, coverage as a trend rather than a number, and push vs. pull.</p>
+          </li>
+          <li class="post-item">
+            <p class="post-kicker"><span>Project</span><span>Analog compute</span></p>
+            <h2><a href="blog/neuronease.html">NeuronEase: a memristor crossbar for neural-network inference</a></h2>
+            <p>Designing and simulating a memristor crossbar architecture for analog multiply-accumulate — my final-year project.</p>
+          </li>
+          <li class="post-item">
+            <p class="post-kicker"><span>Project</span><span>Device fabrication</span></p>
+            <h2><a href="blog/mim-fabrication.html">Fabricating TiO₂ MIM memory cells</a></h2>
+            <p>Cu/TiO₂/Pt vs. Al/TiO₂/Pt in a cleanroom — sputtering, annealing, and what the I–V curves actually showed.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+</body>
+</html>

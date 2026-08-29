@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="Projects by Dharma Teja Gurram — memristor hardware accelerators, VLSI fabrication, and FPGA/HDL coursework.">
+  <title>Projects — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="index.html">Home</a>
+        <a href="projects.html" aria-current="page">Projects</a>
+        <a href="blog.html">Writing</a>
+        <a href="index.html#about">About</a>
+        <a class="btn" href="sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="wrap">
+        <div>
+          <p class="eyebrow">Projects</p>
+          <h1>What I've built.</h1>
+          <p class="lede">Two recent projects with full writeups, plus coursework and personal projects from IIT Mandi.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="featured">
+      <div class="wrap">
+        <div class="sec-head"><h2>Featured</h2><span class="tick"></span></div>
+
+        <article class="entry">
+          <div class="entry-head">
+            <h3><a href="blog/neuronease.html">NeuronEase — Memristor-Based Hardware Accelerator</a></h3>
+            <span class="entry-when">Final-year project</span>
+          </div>
+          <p>Designed and simulated a memristor crossbar architecture (Stanford ReRAM model, Cadence Virtuoso, Verilog-A) performing analog multiply-accumulate operations for neural-network inference acceleration.</p>
+          <a class="readmore" href="blog/neuronease.html">Read the writeup →</a>
+          <ul class="tags">
+            <li>Verilog-A</li><li>Cadence Virtuoso</li><li>ReRAM</li>
+          </ul>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <h3><a href="blog/mim-fabrication.html">TiO₂ MIM Memory Cell Fabrication</a></h3>
+            <span class="entry-when">VLSI Fabrication Practicum, IIT Mandi</span>
+          </div>
+          <p>Fabricated and characterized Cu/TiO₂/Pt and Al/TiO₂/Pt memristive cells — RCA cleaning, DC/RF sputtering, 600°C annealing, thermal deposition — and measured I–V resistive switching.</p>
+          <a class="readmore" href="blog/mim-fabrication.html">Read the writeup →</a>
+          <ul class="tags">
+            <li>Sputtering</li><li>Thermal deposition</li><li>I–V characterization</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="earlier">
+      <div class="wrap">
+        <div class="sec-head"><h2>Earlier work</h2><span class="tick"></span></div>
+        <p class="sec-intro">Coursework and personal projects from IIT Mandi, predating the work above.</p>
+        <ul class="archive">
+          <li><a href="works/FPGA_Image_processor.html"><span class="archive-name">FPGA Image Processor</span><span class="archive-note">FPGA</span></a></li>
+          <li><a href="works/FPGA_NN.html"><span class="archive-name">FPGA Neural Network</span><span class="archive-note">FPGA</span></a></li>
+          <li><a href="works/FPGA_Snake_Game.html"><span class="archive-name">FPGA Snake Game</span><span class="archive-note">FPGA</span></a></li>
+          <li><a href="works/risc_v_processor.html"><span class="archive-name">RISC-V Processor Core</span><span class="archive-note">HDL</span></a></li>
+          <li><a href="works/x86_processor.html"><span class="archive-name">x86 Processor Core</span><span class="archive-note">HDL</span></a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+</body>
+</html>

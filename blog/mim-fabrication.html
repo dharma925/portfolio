@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="Fabricating and characterizing Cu/TiO2/Pt and Al/TiO2/Pt memristive MIM cells — RCA cleaning, sputtering, annealing, and I–V resistive switching.">
+  <title>Fabricating TiO₂ MIM Memory Cells — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Project</span><span>Device fabrication</span><span>VLSI Fabrication Practicum (EE611P), IIT Mandi</span></p>
+      <h1>Fabricating TiO₂ MIM memory cells</h1>
+      <p class="standfirst">Two metal–insulator–metal stacks, one insulator, and a measurable difference in how well each electrode metal made the switching behave.</p>
+
+      <div class="prose">
+        <p>For the VLSI Fabrication Practicum at IIT Mandi, my lab partner and I fabricated and characterized metal–insulator–metal (MIM) memristive cells using TiO₂ as the switching oxide, with two different top electrode metals: copper and aluminum. The goal was to build resistive-switching devices from scratch — cleanroom process to measured I–V curve — and see how the choice of electrode changed the result.</p>
+
+        <h2>Structure</h2>
+        <p>Both devices shared the same stack geometry: a platinum bottom electrode, a TiO₂ switching layer roughly <strong>97 nm</strong> thick, and a top electrode of either copper or aluminum. So the comparison was clean — same oxide, same thickness, same process flow, only the top metal changed.</p>
+
+        <h2>Process</h2>
+        <p>The fabrication sequence:</p>
+        <ul>
+          <li><strong>RCA cleaning</strong> of the substrates to remove organic and ionic contamination before any deposition.</li>
+          <li><strong>DC and RF sputtering</strong> to deposit the platinum bottom electrode and the TiO₂ oxide layer.</li>
+          <li><strong>Annealing at 600°C</strong> to set the oxide's crystalline structure and stoichiometry.</li>
+          <li><strong>Thermal deposition</strong> of the top electrode — copper on one device, aluminum on the other.</li>
+        </ul>
+
+        <h2>What the I–V curves showed</h2>
+        <p>Both devices switched — applying a bias forced a transition from a high-resistance to a low-resistance state (SET), with the Cu/TiO₂/Pt device switching at a <strong>V<sub>SET</sub> of 4.1 V</strong>. But the two devices didn't switch equally well:</p>
+        <ul>
+          <li>The <strong>Cu/TiO₂/Pt</strong> device showed an I<sub>on</sub>/I<sub>off</sub> ratio up to <strong>10⁴</strong> — a clean, well-separated on/off window.</li>
+          <li>The <strong>Al/TiO₂/Pt</strong> device only reached an I<sub>on</sub>/I<sub>off</sub> ratio of about <strong>10²</strong> — two orders of magnitude worse.</li>
+        </ul>
+        <p>The likely cause: aluminum forms a thin native Al₂O₃ layer at the interface with the TiO₂ almost as soon as it's deposited, before the stack is ever measured. That extra oxide interferes with the conductive filament formation that TiO₂ resistive switching depends on, which flattens the on/off contrast. Copper doesn't form a comparably stable native oxide under the same conditions, so the Cu device's switching stayed closer to the oxide's intrinsic behavior.</p>
+
+        <h2>Takeaway</h2>
+        <p>The electrode isn't a passive contact — its surface chemistry is part of the device. Two cells built from an identical oxide, on an identical bottom electrode, with an identical anneal, gave a 100x difference in switching ratio purely from which metal touched the oxide on top. We co-authored a lab report on the full characterization.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="neuronease.html">← NeuronEase: a memristor crossbar for neural-network inference</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="NeuronEase: a memristor crossbar architecture for analog multiply-accumulate in neural-network inference, simulated with the Stanford ReRAM model in Cadence Virtuoso.">
+  <title>NeuronEase — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Project</span><span>Analog compute</span><span>Final-year project, IIT Mandi</span></p>
+      <h1>NeuronEase: a memristor crossbar for neural-network inference</h1>
+      <p class="standfirst">Doing multiply-accumulate in the analog domain, by letting Ohm's law and Kirchhoff's current law do the arithmetic instead of a digital multiplier array.</p>
+
+      <div class="prose">
+        <p>Neural-network inference is dominated by one operation: multiply-accumulate. A conventional accelerator does this digitally — a grid of multiplier-adder units, clocked, pipelined, power-hungry. NeuronEase was my final-year project exploring the alternative: doing the multiply-accumulate <em>in the analog domain</em>, using the physics of a memristor crossbar array instead of digital logic.</p>
+
+        <h2>Why a crossbar does MAC for free</h2>
+        <p>A memristor crossbar is a grid of resistive memory elements, each one programmable to a conductance that represents a weight. Feed a voltage (the input activation) into a row, and by Ohm's law the current through each memristor at that row is proportional to voltage × conductance — a multiplication, done physically, with no clock cycle. Kirchhoff's current law then sums every current flowing into a column automatically. Row-by-row multiply, column-wise accumulate — the crossbar's wiring <em>is</em> the MAC unit.</p>
+
+        <h2>What I built</h2>
+        <p>The design used the Stanford ReRAM compact model to represent memristor device behavior accurately in simulation, implemented the crossbar and its analog periphery in <strong>Verilog-A</strong>, and ran the design and simulation in <strong>Cadence Virtuoso</strong>. The target was neural-network inference acceleration — mapping trained weights onto the crossbar's conductance states and driving inputs through as analog voltages.</p>
+
+        <h2>Where analog MAC gets hard</h2>
+        <p>The appeal of a crossbar is that the array does the arithmetic passively. The hard part is everything around it: memristor devices don't program to an exact conductance and drift over time, so weight precision is limited by device variability rather than by how many bits you're willing to spend. Peripheral circuits — DACs to drive rows, TIAs or ADCs to read columns — have to convert in and out of the analog domain without eating the energy savings the crossbar was supposed to provide. Getting the compact model to track real device non-idealities closely enough for the simulation to mean something was a large part of the work.</p>
+
+        <h2>Where it sits</h2>
+        <p>This project is what pulled me toward verification and hardware quality more broadly — modeling a device accurately enough to trust the simulation is, in a lot of ways, the same discipline as verifying that a design behaves as specified before it reaches silicon.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="mim-fabrication.html">Fabricating TiO₂ MIM memory cells →</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+</body>
+</html>

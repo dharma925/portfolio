@@ -1,151 +1,244 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="author" content="Dharma Teja Gurram">
-    <meta name="description" content="Portfolio website of Dharma Teja Gurram">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dharma Teja Gurram | Home</title>
-    <!-- <link rel="icon" type="image/png" href="sources/icon.png"/> -->
-    <link rel="shortcut icon" href="sources/icon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css" integrity="sha256-XoaMnoYC5TH6/+ihMEnospgm0J1PM/nioxbOUdnM8HY=" crossorigin="anonymous">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="Dharma Teja Gurram — Design Verification Engineer building CI automation, regression infrastructure, and quality gates for ASIC/SoC front-end verification.">
+  <title>Dharma Teja Gurram — Design Verification Engineer</title>
+  <link rel="shortcut icon" href="sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <script>
-        function showmenu(){
-            var menbar = document.querySelector(".nav");
-            var bar = document.querySelector(".navbar");
-            var op = window.getComputedStyle(menbar).opacity;
-            if (op === "1"){
-                menbar.style.height = "0";
-                menbar.style.opacity = "0";
-                const btn = document.querySelector(".ham");
-                btn.innerHTML = `<a ><i class="fa fa-bars" aria-hidden="true"></i></a>`;
-                bar.style.marginBottom = "0";
-                bar.style.transition = "1s";
-                menbar.style.transition = "1s";
-                bar.style.transitionDelay = ".5s";
-                setTimeout(() => {
-                    menbar.innerHTML= ``;
-                    menbar.style.transition = "0s";
-                    btn.innerHTML = `<a onclick="showmenu()"><i class="fa fa-bars" aria-hidden="true"></i></a>`;
-                }, 1500);
-                
-            }
-            else if (op === "0"){
-                menbar.style.opacity = "1";
-                menbar.style.height = "31.5vh";
-                menbar.innerHTML= `
-                <a href="" id="home" class="active" >HOME</a>
-                <a href="xplorations.html" id="xplo">EXPLORATIONS</a>
-                <a href="sources/Dharma_Resume.pdf" target="_blank" id="resu">RESUME</a>
-                <a href="about.html" id="abt">ABOUT</a>
-                
-                `;
-                const btn = document.querySelector(".ham");
-                btn.innerHTML = `<a onclick="showmenu()"><i class="fa fa-times" aria-hidden="true"></i></a>`;
-                bar.style.marginBottom = "35vh";
-                bar.style.transition = "1s";
-                menbar.style.transition = "1s";
-                menbar.style.transitionDelay = ".5s";
-                setTimeout(() => {
-                    menbar.style.transition = "0s";
-                }, 1500);
 
-            }
+  <a href="#main" class="skip">Skip to content</a>
 
-        }
-        
-            
-        window.onresize = function(){
-            var menbar = document.querySelector(".nav");
-            var width = window.innerWidth;
-            var op = window.getComputedStyle(menbar).opacity;
-            if (width >= 965){
-                
-                menbar.innerHTML= `
-                <a href="" id="home" class="active" >HOME</a>
-                <a href="xplorations.html" id="xplo">EXPLORATIONS</a>
-                <a href="sources/Dharma_Resume.pdf" target="_blank" id="resu">RESUME</a>
-                <a href="about.html" id="abt">ABOUT</a>
-                
-                `;
-            } else if (width < 965 && op === "0"){
-                menbar.innerHTML= ``;
-            }
-        }
-    </script>
-    <section class="navbar">
-        <a id="title-band" href="about.html">
-            <div class="title">
-                Dharma Teja Gurram <br>
-                <span>UG student</span>
-            </div>
-        </a>
-        
-        <div class="nav">
-            <a href="" id="home" class="active" >HOME</a>
-            <a href="xplorations.html" id="xplo">EXPLORATIONS</a>
-            <a href="sources/Dharma_Resume.pdf" target="_blank" id="resu">RESUME</a>
-            <a href="about.html" id="abt">ABOUT</a>
-        </div>
-        <div class="ham" >
-            <a onclick="showmenu()">
-                <i class="fa fa-bars" aria-hidden="true"></i>
-            </a>
-        </div>
-    </section>
-    <div class="pagetitle">
-        PROJECTS
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="index.html" aria-current="page">Home</a>
+        <a href="projects.html">Projects</a>
+        <a href="blog.html">Writing</a>
+        <a href="index.html#about">About</a>
+        <a class="btn" href="sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
     </div>
-    <section id="works">
-        <a href="works/FPGA_Image_processor.html" class="work">
-            <div class="title">FPGA Image Processor</div>
-            <div class="description">Memristor Crossbar array application for hardware acceleration of neural netwroks parameters' multiplication using tunable resistance property of memristor.</div>
-            <div class="imgbx">
-                <img src="sources/works/works_1_1.jpg" alt="">
-            </div>
-        </a>
+  </header>
 
-        <a href="works/FPGA_NN.html" class="work">
-            <div class="title">FPGA Neural Network</div>
-            <div class="description">Memristor Crossbar array application for hardware acceleration of neural netwroks parameters' multiplication using tunable resistance property of memristor.</div>
-            <div class="imgbx">
-                <img src="sources/works/works_1_1.jpg" alt="">
-            </div>
-        </a>
+  <main id="main">
 
-        <a href="works/FPGA_Snake_Game.html" class="work">
-            <div class="title">FPGA Snake Game</div>
-            <div class="description">Memristor Crossbar array application for hardware acceleration of neural netwroks parameters' multiplication using tunable resistance property of memristor.</div>
-            <div class="imgbx">
-                <img src="sources/works/works_1_1.jpg" alt="">
-            </div>
-        </a>
-
-        <a href="works/risc_v_processor.html" class="work">
-            <div class="title">RISC V processor Core</div>
-            <div class="description">Memristor Crossbar array application for hardware acceleration of neural netwroks parameters' multiplication using tunable resistance property of memristor.</div>
-            <div class="imgbx">
-                <img src="sources/works/works_1_1.jpg" alt="">
-            </div>
-        </a>
-
-        <a href="works/x86_processor.html" class="work">
-            <div class="title">x86 Processor Core</div>
-            <div class="description">Memristor Crossbar array application for hardware acceleration of neural netwroks parameters' multiplication using tunable resistance property of memristor.</div>
-            <div class="imgbx">
-                <img src="sources/works/works_1_1.jpg" alt="">
-            </div>
-        </a>
-        
+    <!-- ---------- hero ---------- -->
+    <section class="hero">
+      <div class="wrap">
+        <div>
+          <p class="eyebrow">Design Verification Engineer · Texas Instruments</p>
+          <h1>Verify the design.<br>Automate the gate.<br>Catch it before it merges.</h1>
+          <p class="lede">I build <strong>CI automation and regression infrastructure</strong>
+            for front-end ASIC/SoC verification — the systems that catch problems
+            pre-submit, not after they've cost someone a day of debug.</p>
+          <div class="btn-row">
+            <a class="btn btn--pri" href="#projects">See projects →</a>
+            <a class="btn" href="sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Download résumé</a>
+          </div>
+          <p class="meta">Bengaluru, India · gurramdharma925@gmail.com · +91 9182436977</p>
+        </div>
+        <ul class="specs">
+          <li><span class="k">Role</span><span class="v">Design Verification Eng.</span></li>
+          <li><span class="k">Employer</span><span class="v">Texas Instruments</span></li>
+          <li><span class="k">Based</span><span class="v">Bengaluru, India</span></li>
+          <li><span class="k">Experience</span><span class="v">2+ yrs · ASIC/SoC</span></li>
+          <li><span class="k">Focus</span><span class="v">CI · Regression · Gates</span></li>
+          <li><span class="k">Education</span><span class="v">B.Tech EE, IIT Mandi</span></li>
+        </ul>
+      </div>
     </section>
-    
+
+    <!-- ---------- stack ---------- -->
+    <section class="flow">
+      <div class="wrap">
+        <p class="flow-label">Languages, tools, and stack</p>
+        <ul class="caps">
+          <li class="cap">
+            <h3>Design &amp; HDL</h3>
+            <ul class="tags"><li>SystemVerilog</li><li>Verilog</li><li>VHDL</li><li>Verilog-A</li></ul>
+          </li>
+          <li class="cap">
+            <h3>EDA &amp; verification</h3>
+            <ul class="tags"><li>Xcelium</li><li>SimVision</li><li>JasperGold</li><li>vManager</li><li>Virtuoso</li><li>Design Compiler</li><li>Makeflow</li></ul>
+          </li>
+          <li class="cap">
+            <h3>Automation &amp; scripting</h3>
+            <ul class="tags"><li>Python</li><li>Bash/Shell</li><li>Tcl</li><li>Perl</li><li>Linux</li></ul>
+          </li>
+          <li class="cap">
+            <h3>Version control &amp; CI/CD</h3>
+            <ul class="tags"><li>Design Sync</li><li>Perforce</li><li>Git</li><li>Bitbucket</li><li>Jira</li><li>Confluence</li></ul>
+          </li>
+          <li class="cap">
+            <h3>AI tooling &amp; software</h3>
+            <ul class="tags"><li>Claude Code</li><li>MCP</li><li>Vectara</li><li>React</li><li>Node.js</li><li>Flask</li><li>OIDC</li></ul>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ---------- capabilities ---------- -->
+    <section class="section" id="capabilities">
+      <div class="wrap">
+        <div class="sec-head"><h2>Capabilities</h2><span class="tick"></span></div>
+        <ul class="caps">
+          <li class="cap">
+            <h3>CI &amp; regression automation</h3>
+            <p>Pipeline orchestration, scheduling, and result triage across daily and nightly runs. Python, Bash/Shell, Tcl, Perl.</p>
+          </li>
+          <li class="cap">
+            <h3>Verification &amp; EDA</h3>
+            <p>Cadence Xcelium, SimVision, JasperGold (Lint/CDC), vManager, Design Compiler — functional coverage on critical IP blocks.</p>
+          </li>
+          <li class="cap">
+            <h3>Design &amp; HDL</h3>
+            <p>SystemVerilog, Verilog, VHDL, Verilog-A — from RTL through synthesis, netlists, and timing/power/area reports.</p>
+          </li>
+          <li class="cap">
+            <h3>AI-assisted tooling</h3>
+            <p>MCP server creation and Claude Code integrations for design/verification teams, plus the workflow automation that puts them into daily use; LLM/RAG tooling with Vectara; React, Node.js, Flask underneath.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ---------- experience ---------- -->
+    <section class="section" id="experience">
+      <div class="wrap">
+        <div class="sec-head"><h2>Experience</h2><span class="tick"></span></div>
+
+        <article class="entry">
+          <div class="entry-head">
+            <h3>Texas Instruments</h3>
+            <span class="entry-when">Jul 2024 — Present</span>
+          </div>
+          <p class="entry-role">Design Verification Engineer · Bengaluru, India</p>
+          <ul>
+            <li>Architected and maintain the verification team's front-end automation stack — regression reporting, pipeline-health dashboards, and CI orchestration used daily across the team.</li>
+            <li>Built a pre-submit quality gate that runs sanity checks on every workspace commit and blocks failures before they reach the mainline, cutting post-sync breakages that used to cost engineers a working day to cross-debug.</li>
+            <li>Built an automated Lint/CDC quality-check pipeline triggered on release, with compute-farm monitoring to keep pipeline throughput up.</li>
+            <li>Own verification and testcase development for critical IP blocks (Filter, DPWM, ADC, OTP controller); run daily and nightly CI simulation flows in Xcelium and vManager to maintain functional coverage.</li>
+            <li>Drove business-unit-wide adoption of AI-assisted engineering workflows — deployed Claude Code and custom MCP integrations for design and verification engineers beyond the immediate team.</li>
+          </ul>
+          <ul class="tags">
+            <li>Xcelium</li><li>vManager</li><li>JasperGold</li><li>Python</li><li>Design Sync</li>
+          </ul>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <h3>Texas Instruments</h3>
+            <span class="entry-when">Jan 2023 — Jul 2023</span>
+          </div>
+          <p class="entry-role">Digital Design Intern · Bengaluru, India</p>
+          <ul>
+            <li>Implemented interleaved (2/3-phase) peak-current-mode control for the UCD3138 digital power supply controller per design spec.</li>
+            <li>Synthesized IP blocks (I²C, PMBus, Timer), generating area, power, and timing reports and netlists; authored an implementation specification by analyzing a communication interface IP.</li>
+          </ul>
+          <ul class="tags">
+            <li>Verilog</li><li>UCD3138</li><li>Synthesis</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- ---------- projects ---------- -->
+    <section class="section" id="projects">
+      <div class="wrap">
+        <div class="sec-head"><h2>Projects</h2><span class="tick"></span></div>
+
+        <article class="entry">
+          <div class="entry-head">
+            <h3><a href="blog/neuronease.html">NeuronEase — Memristor-Based Hardware Accelerator</a></h3>
+            <span class="entry-when">Final-year project</span>
+          </div>
+          <p>Designed and simulated a memristor crossbar architecture (Stanford ReRAM model, Cadence Virtuoso, Verilog-A) performing analog multiply-accumulate operations for neural-network inference acceleration.</p>
+          <a class="readmore" href="blog/neuronease.html">Read the writeup →</a>
+          <ul class="tags">
+            <li>Verilog-A</li><li>Cadence Virtuoso</li><li>ReRAM</li>
+          </ul>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <h3><a href="blog/mim-fabrication.html">TiO₂ MIM Memory Cell Fabrication</a></h3>
+            <span class="entry-when">VLSI Fabrication Practicum, IIT Mandi</span>
+          </div>
+          <p>Fabricated and characterized Cu/TiO₂/Pt and Al/TiO₂/Pt memristive cells — RCA cleaning, DC/RF sputtering, 600°C annealing, thermal deposition — and measured I–V resistive switching.</p>
+          <a class="readmore" href="blog/mim-fabrication.html">Read the writeup →</a>
+          <ul class="tags">
+            <li>Sputtering</li><li>Thermal deposition</li><li>I–V characterization</li>
+          </ul>
+        </article>
+
+        <p class="explore-more">
+          <a class="readmore" href="projects.html">Explore more projects →</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- ---------- writing ---------- -->
+    <section class="section" id="writing">
+      <div class="wrap">
+        <div class="sec-head"><h2>Writing</h2><span class="tick"></span></div>
+        <p class="sec-intro">Notes on verification engineering and the two projects above. Full index on the <a href="blog.html">writing page</a>.</p>
+        <ul class="archive">
+          <li><a href="blog/neuronease.html"><span class="archive-name">NeuronEase: a memristor crossbar for neural-network inference</span><span class="archive-note">Project</span></a></li>
+          <li><a href="blog/mim-fabrication.html"><span class="archive-name">Fabricating TiO₂ MIM memory cells</span><span class="archive-note">Project</span></a></li>
+          <li><a href="blog/pre-submit-quality-gates.html"><span class="archive-name">Why pre-submit beats post-submit</span><span class="archive-note">Essay</span></a></li>
+          <li><a href="blog/regression-reports.html"><span class="archive-name">What makes a regression report worth reading</span><span class="archive-note">Essay</span></a></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ---------- about ---------- -->
+    <section class="section about" id="about">
+      <div class="wrap">
+        <div class="sec-head"><h2>About</h2><span class="tick"></span></div>
+        <p>I'm a Design Verification Engineer at Texas Instruments in Bengaluru, working on front-end automation for ASIC/SoC verification — CI pipelines, regression infrastructure, and the quality gates that catch problems before they reach silicon.</p>
+        <p>Before that, I was building things from the ground up: a memristor-crossbar neural-network accelerator for my final-year project, and, before that, fabricating my own TiO₂ memory cells in a cleanroom during a VLSI fabrication practicum.</p>
+        <p>B.Tech in Electrical Engineering (Honors), IIT Mandi, 2020–2024, CGPA 8.68/10. Coursework: Digital System Design, Digital MOS LSI Design, Device Electronics for ICs, VLSI Fabrication.</p>
+      </div>
+    </section>
+
+    <!-- ---------- contact ---------- -->
+    <section class="section" id="contact">
+      <div class="wrap">
+        <div class="sec-head"><h2>Contact</h2><span class="tick"></span></div>
+        <ul class="contact-list">
+          <li><a href="mailto:gurramdharma925@gmail.com"><span class="contact-k">Email</span><span class="contact-v">gurramdharma925@gmail.com</span></a></li>
+          <li><a href="tel:+919182436977"><span class="contact-k">Phone</span><span class="contact-v">+91 9182436977</span></a></li>
+          <li><a href="https://linkedin.com/in/dharma925" target="_blank" rel="noopener"><span class="contact-k">LinkedIn</span><span class="contact-v">linkedin.com/in/dharma925</span></a></li>
+          <li><a href="https://github.com/dharma925" target="_blank" rel="noopener"><span class="contact-k">GitHub</span><span class="contact-v">github.com/dharma925</span></a></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
 </body>
 </html>

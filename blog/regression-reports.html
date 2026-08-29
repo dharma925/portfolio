@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="What makes a regression report worth reading: new vs known failures, clustering by cause, flakiness, coverage as a trend, and push vs pull.">
+  <title>What Makes a Regression Report Worth Reading — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Essay</span><span>Verification engineering</span></p>
+      <h1>What makes a regression report worth reading</h1>
+      <p class="standfirst">A nightly run that produces a wall of red doesn't tell anyone anything. The job of a regression report is to compress a thousand test results into the five minutes someone actually has to look at it.</p>
+
+      <div class="prose">
+        <p>Most regression infrastructure gets judged on whether it runs the tests. That's necessary but not the hard part. The hard part is what happens after: a few thousand test results land, and someone has to figure out, in the time before their next meeting, whether the team needs to care. A report that just lists pass/fail per test is technically complete and practically useless at that scale. A report worth reading is doing real work to answer one question fast: <em>did anything new break, and is it real?</em></p>
+
+        <h2>New failures vs. known failures</h2>
+        <p>The single biggest lever is separating "failed today" from "failed today, and also failed yesterday." A known failure with an open bug against it is background noise the reader has already triaged — showing it at the same visual weight as a fresh break just makes them re-triage it every single morning. Diffing against the previous run's result set and surfacing only the delta turns a wall of red into a short, actionable list. Everything else moves to a "known issues" section nobody has to read unless they want to.</p>
+
+        <h2>Clustering by cause</h2>
+        <p>Fifty failing tests are rarely fifty problems. A single broken shared component, a bad checkout, an environment change — one root cause can fan out across a huge chunk of a suite. A report that lists fifty individual failures makes the problem look fifty times bigger than it is and buries the one thing that actually needs fixing. Clustering failures by shared signature — same error string, same file touched last, same block instantiated — collapses that fan-out back down to the handful of actual root causes, which is a much shorter list to hand to the right owner.</p>
+
+        <h2>Flakiness is data, not noise</h2>
+        <p>A test that fails intermittently with no code change involved is usually treated as an annoyance to be re-run away. Treated as data instead — tracked per test, over time — flakiness rate becomes one of the more useful trend lines a team has, because it's a leading indicator of a race condition, a timing dependency, or shared-state pollution that will eventually show up as a real bug at the worst possible time. A report that quietly tracks and surfaces flaky tests, instead of just re-running them until green, gives the team a chance to fix the underlying issue before it costs someone a debugging session that goes nowhere.</p>
+
+        <h2>Coverage as a trend, not a number</h2>
+        <p>A coverage percentage on its own answers almost nothing — "94%" tells you nothing about whether this week's changes added real coverage or just inflated the denominator. Coverage is far more useful plotted over time, per block, alongside the commits that moved it: did it go up, down, or flatline against a growing codebase? A flattening trend on an actively-developed block is a much sharper signal than any single snapshot number, and it's the kind of thing a static report can't show but a report built to answer this specific question can.</p>
+
+        <h2>Push vs. pull</h2>
+        <p>Even a well-built report is only useful if someone reads it, which means the reporting system has to decide whether it's something people go look at, or something that comes to them. Pull — a dashboard someone opens — respects people's time but silently depends on them remembering to check it, and habits erode. Push — a message when something new and real breaks — guarantees visibility but, done carelessly, trains people to mute the channel the first time it pushes noise. The report above (new-vs-known, clustered, flakiness-aware) is what makes push viable at all: you can only justify interrupting someone if what you're sending them is already filtered down to something worth their attention.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="pre-submit-quality-gates.html">← Why pre-submit beats post-submit</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+</body>
+</html>

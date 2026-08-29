@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="Why pre-submit quality gates beat post-submit cleanup — what earns a place in a blocking gate, rejection messages as UI, and fail-open vs fail-closed.">
+  <title>Why Pre-Submit Beats Post-Submit — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Essay</span><span>Verification engineering</span></p>
+      <h1>Why pre-submit beats post-submit</h1>
+      <p class="standfirst">A check that runs after the merge is a report. A check that runs before it is a gate. They cost about the same to build and produce completely different behavior from the team.</p>
+
+      <div class="prose">
+        <p>Every verification team eventually builds automated checks — lint, structural rules, sanity sims, style enforcement. The question that matters more than which checks you build is <em>when</em> they run. Post-submit, a check tells you something broke. Pre-submit, a check stops something from breaking. Same logic, same script in a lot of cases — completely different effect on how the team works.</p>
+
+        <p>Post-submit failures are cheap to produce and expensive to fix. By the time a nightly regression flags a broken commit, the author has moved on, context has evaporated, and now someone — often not the author — has to reconstruct what changed and why it broke. Multiply that by however many commits landed between the break and the report, and you get the familiar bisection hunt. A pre-submit gate collapses all of that: the person with full context, at the moment they have it, gets told no before the damage is shared with anyone else.</p>
+
+        <h2>What earns a place in a blocking gate</h2>
+        <p>Not everything belongs pre-submit. A gate has a hard constraint a report doesn't: it has to be fast enough and reliable enough that blocking on it doesn't feel like a tax. Three things earn a spot:</p>
+        <ul>
+          <li><strong>It runs fast.</strong> Seconds to a couple of minutes. Nobody respects a gate that takes long enough to start context-switching.</li>
+          <li><strong>It's deterministic.</strong> Same input, same result, every time. A flaky check in a blocking position doesn't just annoy people — it teaches them to ignore the gate, which is worse than not having it.</li>
+          <li><strong>Its failures are actionable.</strong> There has to be a specific, fixable reason, not "regression suite is red" with forty possible causes.</li>
+        </ul>
+        <p>Anything slower, noisier, or vaguer belongs in the nightly or weekly regression instead — still valuable, just not in the path of every commit.</p>
+
+        <h2>Rejection messages are UI</h2>
+        <p>A blocking gate is a piece of software with exactly one user-facing moment: the message it shows when it says no. Most teams treat that message as an afterthought — a stack trace, a log path, an exit code. But that message is what an engineer sees at the exact point they're most receptive to fixing something, and most likely to be annoyed if the gate feels arbitrary. "FAIL: lint_check.py line 412" earns resentment. "FAIL: unused signal <code>clk_div_2</code> in filter_ctrl.sv:88 — remove it or reference it" earns a fix and moves on. The difference in engineering effort between those two messages is small. The difference in how much the gate is trusted is not.</p>
+
+        <h2>Fail-open or fail-closed</h2>
+        <p>The question nobody writes down until the day it matters: what does the gate do when the gate itself breaks — the checker crashes, the compute farm is down, a dependency is unreachable? Fail-closed (block the submit) is safer for correctness but turns an infrastructure outage into a team-wide work stoppage. Fail-open (let it through) keeps the team moving but means your safety net has silent holes exactly when things are already going wrong elsewhere.</p>
+        <p>There isn't a universally right answer, but there is a wrong process: deciding it implicitly, by whatever the exception handler happens to do. It should be a deliberate choice per check, based on what that specific check protects against and how expensive it is to be wrong. A style check can probably fail open. A check that protects against a broken mainline probably shouldn't.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="regression-reports.html">What makes a regression report worth reading →</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+</body>
+</html>
