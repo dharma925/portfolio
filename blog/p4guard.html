@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="P4Guard: a live Perforce Helix Core server with real Python submit triggers, a CI orchestrator, an LSF-shaped compute farm, and a regression dashboard — architecture, problem statement, and a step-by-step guide to running it.">
+  <title>P4Guard — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Project</span><span>CI automation · Perforce</span><span>Personal project</span></p>
+      <h1>P4Guard: a self-enforcing Perforce CI platform</h1>
+      <p class="standfirst">A local Perforce Helix Core server that rejects bad changelists at <code>p4 submit</code>, kicks off its own CI, and reports on itself — built to prove the front-end integration skillset, not just describe it.</p>
+
+      <div class="prose">
+        <p>Most portfolio projects that claim "CI/CD experience" are a YAML file and a screenshot. This one is a real, working system: a genuine local Perforce Helix Core server, provisioned entirely from spec files, with Python triggers that actually reject bad submits, a CI orchestrator that actually runs, and a dashboard built from actual run history. Everything in this post is something you can run yourself and watch happen — there's a link to exactly how, at the bottom.</p>
+
+        <h2>Perforce in 90 seconds</h2>
+        <p>If you've never touched Perforce, five ideas cover almost everything below. If you have, skip ahead to <a href="#the-problem">the problem</a>.</p>
+        <ul>
+          <li><strong>Depot</strong> — the central repository. Everything lives under one root, like <code>//frontend_asic/</code>.</li>
+          <li><strong>Stream</strong> — a branch, but Perforce also knows its <em>relationship</em> to its parent (mainline, development, or release) and can enforce that branching model for you.</li>
+          <li><strong>Workspace</strong> — your local checkout, defined by a spec that maps depot paths to a local folder.</li>
+          <li><strong>Changelist</strong> — a numbered batch of pending edits. You <code>p4 edit</code> a file, change it, then <code>p4 submit</code> — submitting and committing are the same moment.</li>
+          <li><strong>Trigger</strong> — a script the <em>server</em> runs automatically at a point in a command's lifecycle, able to reject the command outright. This is the mechanism the whole project is built around.</li>
+        </ul>
+
+        <h2 id="the-problem">The problem</h2>
+        <p>Several IP teams — SerDes, MAC, PCIe, in this project's stand-in chip — commit RTL into one shared depot. Someone has to guarantee that a broken or badly-styled commit never reaches the stream everyone else builds on, that every commit runs through lint/synthesis/equivalence/simulation without a human remembering to kick it off, that a broken build gets noticed in minutes instead of days, and that a release drop is an unambiguous, reproducible snapshot rather than "whichever changelist someone thinks is stable." Perforce gives you the primitives — triggers, streams, labels — but none of that policy enforcement exists until someone builds it on top. That layer is what this project is.</p>
+
+        <h2>The architecture</h2>
+        <p>A submit is checked twice on the way in and triggers CI on the way out, all server-side:</p>
+
+        <figure class="figure">
+<pre class="mermaid">
+flowchart TB
+    Dev["Engineer:\np4 submit"] -->|"1 . change-submit"| PolicyGate["policy-gate\nchecks description"]
+    PolicyGate -->|"2 . change-content"| LintGate["lint-gate\nlints pending content"]
+    LintGate -->|"reject on error"| Dev
+    LintGate -->|"3 . commits"| Stream[("Perforce stream")]
+    Stream -->|"4 . change-commit, detached"| Kickoff["ci-kickoff trigger"]
+    Kickoff --> Runner["flow_runner.py"]
+    Runner --> Farm["LSF-shaped farm"]
+    Farm --> EDA["Mock EDA tools\nSpyGlass . Design Compiler .\nConformal . Xcelium"]
+    EDA -->|"JSON reports"| Runner
+    Runner --> Dashboard["Dashboard"]
+    Runner --> Slack["Slack notifier"]
+</pre>
+          <figcaption class="figure-cap">Fig. 1 — one changelist, from submit to reported result. Steps 1–2 can block the submit; step 4 runs detached so CI never adds latency to the engineer's <code>p4 submit</code>.</figcaption>
+        </figure>
+
+        <p>The distinction between step 1 and step 2 above is the single trickiest part of the whole project. Perforce actually offers <em>three</em> separate trigger points around a submit: <code>change-submit</code> fires before any file content is transferred to the server, <code>change-content</code> fires once content has been transferred but before it's committed — the only point where a trigger can inspect what's about to land — and <code>change-commit</code> fires after it's durably committed. The policy check (does the description reference a ticket?) only needs the description, so it runs at <code>change-submit</code>, the cheapest possible rejection point. The lint check needs to see the actual file content, so it has to run at <code>change-content</code> — registering it as <code>change-submit</code> instead looks correct, runs without error, and silently never catches anything, because the content it's trying to read doesn't exist yet at that point in the lifecycle. That's a real bug this project hit and fixed, not a hypothetical.</p>
+
+        <figure class="figure">
+<pre class="mermaid">
+flowchart LR
+    main["main\nmainline"]
+    main --> serdes["dev_serdes"]
+    main --> mac["dev_mac_pcs"]
+    main --> pcie["dev_pcie"]
+    main --> rel["rel_v1\nlocked, release"]
+    serdes -. merge up .-> main
+    mac -. merge up .-> main
+    pcie -. merge up .-> main
+</pre>
+          <figcaption class="figure-cap">Fig. 2 — one development stream per IP block, merging up into a mainline; a separate locked stream for release/build-drop candidates.</figcaption>
+        </figure>
+
+        <h2>What I built</h2>
+        <p>Six pieces, each doing real work rather than standing in for it:</p>
+        <ul>
+          <li><strong>Streams &amp; protections</strong> — the topology above, provisioned from checked-in spec files rather than clicked together, so the whole depot is reproducible from scratch on any machine.</li>
+          <li><strong>Three pre-submit gates</strong> — ticket-reference policy, RTL lint (naming convention, incomplete case, a latch-inference heuristic), and a release-stream sign-off requirement — all real Perforce triggers, all capable of actually rejecting a submit.</li>
+          <li><strong>A post-submit trigger</strong> that inspects which IP block a changelist touched and launches a scoped CI run, detached, so it never adds latency to the submit itself.</li>
+          <li><strong>An EDA-flow orchestrator</strong> reading a YAML pipeline spec and running lint → synthesis → equivalence → simulation. The licensed tools this would normally wrap — SpyGlass, Design Compiler, Conformal, Xcelium — aren't available outside a company environment, so each stage is a wrapper matching that tool's real CLI shape and report format, doing genuine (if simplified) analysis on the RTL text — not a fabricated pass/fail. The simulation stage goes one step further: if Icarus Verilog is installed, it compiles and runs the testbench for real.</li>
+          <li><strong>A compute-farm simulation</strong> — <code>bsub</code>/<code>bjobs</code>/<code>bqueues</code>-shaped local job queue with real slot limits, so every pipeline stage genuinely queues and the farm-utilization numbers are computed, not invented.</li>
+          <li><strong>Reporting</strong> — a dashboard built from real run history, and a Slack notifier that posts (or safely dry-runs, without a real webhook) after every run.</li>
+        </ul>
+        <p>The honest line to draw: the Perforce server, its streams/triggers/protections, and every submit/login/label operation are completely real. The EDA tools are necessarily mocked — but structured so that swapping a mock for the real licensed tool is a one-line change to the command being run, not a rewrite of the orchestration, farm integration, or trigger logic around it.</p>
+
+        <h2>Try it yourself</h2>
+        <p>The full step-by-step guide — prerequisites, bootstrap, and a live walkthrough of the demo (a lint violation getting rejected, fixed, accepted, and auto-triggering CI, in that order) — is in the repository's README. In short:</p>
+<pre>python -m venv .venv &amp;&amp; .venv/Scripts/pip install -r requirements.txt
+pytest tests -q
+
+bash scripts/bootstrap_p4_server.sh   # stands up a dedicated local p4d
+bash scripts/run_demo.sh              # live reject/accept demo, end to end</pre>
+        <p>Both scripts print exactly what they're doing at each step, so you can watch a real submit get rejected and then accepted rather than taking a README's word for it.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="neuronease.html">NeuronEase: a memristor crossbar for neural-network inference →</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#FFFFFF',
+        primaryTextColor: '#111820',
+        primaryBorderColor: '#0E7C86',
+        lineColor: '#77838F',
+        secondaryColor: '#F6F8FA',
+        tertiaryColor: '#F6F8FA',
+        fontFamily: 'IBM Plex Mono, ui-monospace, monospace',
+        fontSize: '14px'
+      }
+    });
+  </script>
+</body>
+</html>

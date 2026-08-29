@@ -23,11 +23,25 @@ Rebuilt and actually committed to the working tree as of 2026-08-29:
     index.html    home — hero, spec panel, flow strip, capabilities,
                   experience, projects, writing, earlier work, about, contact
     blog.html     writing index
-    blog/*.html   4 posts (see below) — a 5th, fpga-neural-network.html,
+    blog/*.html   5 posts (see below) — a 6th, fpga-neural-network.html,
                   is still open work
     style.css     all styling, shared by every page (at repo root, NOT
                   assets/ — that path never existed in this repo)
     sources/      resume PDF + images
+
+The Perforce project (P4Guard, mentioned as in-progress further down this
+file as of the same date) was finished later on 2026-08-29 and added to
+the site the same day: `blog/p4guard.html`, plus entries in the Projects
+section of `index.html`, the Featured section of `projects.html`, the
+Writing archive on `index.html`, and the posts list in `blog.html` — all
+positioned first, ahead of NeuronEase, since it's the most directly
+relevant project to the front-end integration/CI/EDA-automation roles this
+site targets. It uses Mermaid (loaded via CDN as an ES module, initialized
+inline at the bottom of that one page only, themed to match the site's
+palette) for its architecture/sequence/topology diagrams — the first use
+of Mermaid or any external script on this site. If more posts need
+diagrams, follow that page's pattern rather than adding a site-wide
+Mermaid include.
 
 Not yet rebuilt — still the original 4-year-old pages:
 
@@ -104,15 +118,14 @@ site; anyone at TI would recognise the system regardless of the name.
 
 **2. Nothing goes on the site that isn't built yet.**
 
-There is a Perforce project ("P4Guard" — p4python triggers,
-stream/workspace tooling, build-health reporting). As of 2026-08-29 it
-was **in progress, ~4 hours from done** per Dharma — not finished at the
-time this pass of the site was built, so it was deliberately left off
-both the home page and the two new blog posts. It's fine on Dharma's
-*actual* resume once it's real (his call, on his own timeline). Once it's
-actually built, add it to the site too — write it from what was actually
-built, not from the plan, and check whether it's still true that it's
-"not built yet" before assuming this note is current.
+The Perforce project (P4Guard — real p4python-shaped submit triggers,
+stream/workspace tooling, an LSF-shaped CI farm, build-health reporting)
+was finished on 2026-08-29 and is now on the site (`blog/p4guard.html`) —
+written from what was actually built and verified working end-to-end
+against a real local Helix Core server, not from the plan. If a future
+pass adds capability to that project, update the post to match — same
+rule applies going forward: don't describe something on the public site
+that isn't actually built and working yet.
 
 **3. Don't invent project detail.**
 
@@ -135,9 +148,15 @@ to the target roles without disclosing anything about TI:
 - `blog/regression-reports.html` — new vs known failures, clustering by
   cause, flakiness, coverage as trend, push vs pull.
 
-Two are his own project writeups, with real data (both written and live
-as of 2026-08-29):
+Three are his own project writeups, with real data (all written and live):
 
+- `blog/p4guard.html` (2026-08-29) — a live local Perforce Helix Core
+  server with real Python submit triggers, a CI orchestrator, an
+  LSF-shaped compute farm, mock-but-realistic EDA tool wrappers, and a
+  regression dashboard. Written from and verified against the actual
+  working system at the time of writing (source lives outside this repo,
+  in its own project directory) — not yet linked to a public GitHub repo
+  from this post; see Open work.
 - `blog/neuronease.html` — memristor crossbar, analog MAC, Stanford
   ReRAM model, Cadence Virtuoso, Verilog-A. No performance numbers
   (accuracy, crossbar size, energy) were available when this was
@@ -194,9 +213,10 @@ Writing section of `index.html`.
 3. Add project images for NeuronEase and the TiO2 MIM post — `.shot`
    and `.shot-grid` are ready, no images exist yet. Compress before
    committing — GitHub Pages serves them raw.
-4. Add the Perforce project (P4Guard) once it's actually built — see
-   Content rule #2. Check with Dharma whether it's done before assuming
-   the "not built yet" state above is still current.
+4. `blog/p4guard.html` doesn't link to a public repo yet — the P4Guard
+   source hasn't been pushed to GitHub. Once it is (presumably
+   `github.com/dharma925/...`), add a link near the top or bottom of that
+   post. Don't guess the URL before it exists.
 5. Rewrite or retire `xplorations.html` and the `xplorations/` pages.
    4 years old, describes interests, not work; not linked from current
    nav but still reachable directly and still cross-links to `about.html`.

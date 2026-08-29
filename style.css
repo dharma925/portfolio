@@ -249,3 +249,7 @@ a{color:inherit}
 .shot-grid img{display:block;width:100%;height:auto}
 .shot-grid figcaption{font-family:var(--mono);font-size:0.7rem;color:var(--ink-3);
   padding:0.5rem 0.75rem;line-height:1.45}
+
+/* ---------- mermaid diagrams ---------- */
+.prose pre.mermaid{background:none;border:0;padding:0;margin:0;
+  overflow-x:auto;text-align:center;line-height:normal}
