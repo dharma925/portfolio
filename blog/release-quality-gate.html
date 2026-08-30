@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="A mail-triggered quality gate that parses a release notification, launches per-component checks automatically, watches the compute farm for hung or crashed jobs, and reports what it found.">
+  <title>Release-Triggered Quality Gate — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Project</span><span>Release automation</span><span>Personal project</span></p>
+      <h1>Release-Triggered Quality Gate</h1>
+      <p class="standfirst">In a lot of real engineering orgs, "a new version is ready" is announced by a human-written email, not a clean API call. This gate's first job is turning that messy notification into something a machine can act on — then acting on it.</p>
+
+      <div class="prose">
+        <h2>Why email, and why that's harder than it sounds</h2>
+        <p>Not every event that should trigger automation arrives as a structured webhook. A release announcement is often a semi-structured email: a subject line with a version tag, a body with a changed-paths summary, written by a person, with all the inconsistency that implies — different phrasing, a typo in a tag, a path pasted with the wrong prefix. Building a listener for this means treating the email as an unreliable, semi-structured input to be parsed defensively, not a clean payload to be trusted.</p>
+
+        <h2>The pipeline</h2>
+        <ul>
+          <li><strong>Listen</strong> — poll a mailbox over IMAP/SMTP for messages matching a release-notification pattern.</li>
+          <li><strong>Extract</strong> — pull the version tag and the list of changed components/paths out of the body, using a small set of patterns tolerant of common phrasing variation, and reject (rather than guess on) anything that doesn't match with confidence.</li>
+          <li><strong>Launch</strong> — kick off a Lint/CDC-style check scoped to exactly the components the release actually touched, not the whole design — the same "narrow the blast radius" instinct as the <a href="semantic-debug-agent.html">debug agent's</a> signal-window extraction, applied to which checks run instead of which signals get read.</li>
+          <li><strong>Monitor</strong> — once jobs are running on the farm, watch for the failure modes a plain "did it pass or fail" check misses entirely: a job that's hung with no output for far longer than it should take, or one that crashed outright without ever producing a real result. Both look different from "failed the check" and need different handling.</li>
+          <li><strong>Report</strong> — post a summary of what was checked, what passed, and what didn't, to a shared page the whole team already looks at.</li>
+        </ul>
+
+        <h2>Extraction has to fail loud, not fail quiet</h2>
+        <p>The riskiest failure mode for the extraction step isn't "it can't parse this email" — that's caught immediately and obviously. It's parsing a malformed email <em>incorrectly but plausibly</em>: picking up the wrong version tag, or missing a changed component, and launching checks against the wrong scope without anyone noticing until much later. The mitigation is a confidence threshold on every extracted field — a version tag or path list that doesn't match the expected pattern closely enough gets flagged for a human to confirm rather than silently used. A gate that occasionally asks "is this what you meant?" is far safer than one that occasionally checks the wrong thing and reports all-clear.</p>
+
+        <h2>Hung jobs vs. crashed jobs vs. failed jobs</h2>
+        <p>These need three different responses, and conflating them is a common design mistake. A <strong>failed</strong> job ran to completion and found a real violation — that's the check working correctly. A <strong>crashed</strong> job died before producing a result — usually an environment or licensing problem, worth an automatic retry. A <strong>hung</strong> job is still technically running but hasn't produced output in far longer than the check normally takes — that's the one that needs active monitoring, because nothing about a hung job's exit status tells you it's stuck; you have to watch its progress against an expected baseline and flag it if it stalls.</p>
+
+        <figure class="figure">
+<pre><code>if job.status == "running" and job.idle_time > EXPECTED_RUNTIME * 3:
+    flag_as_hung(job)   # exit status alone won't catch this
+</code></pre>
+          <figcaption class="figure-cap">Fig. 1 — hung-job detection has to be a liveness check against a time baseline, not a status-code check, because a hung job's status is indistinguishable from a slow-but-fine one until you compare it to how long the check should actually take.</figcaption>
+        </figure>
+
+        <h2>Why report to a shared page instead of a private log</h2>
+        <p>A per-run log file only helps someone who already knows to go look for it. Posting the violation summary somewhere the team already has open — a shared status page everyone checks as part of their normal routine — means a release-blocking issue gets seen by the people who'd otherwise have found out the hard way, without anyone needing to know this gate exists in the first place.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="workspace-health-checker.html">← Workspace Health Checker</a>
+        <a href="chatops-orchestrator.html">ChatOps Workspace Orchestrator →</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+</body>
+</html>

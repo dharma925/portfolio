@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="A chat-based interface for triggering and monitoring workspace operations through natural language, scoped to a small whitelist of safe commands.">
+  <title>ChatOps Workspace Orchestrator — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Project</span><span>ChatOps</span><span>Personal project</span></p>
+      <h1>ChatOps Workspace Orchestrator</h1>
+      <p class="standfirst">Kicking off a build shouldn't require remembering a hostname, opening a terminal, and typing a command you run twice a month. This is a chat command surface for the handful of workspace operations that are small enough not to deserve that much ceremony.</p>
+
+      <div class="prose">
+        <h2>The friction this removes</h2>
+        <p>Most of the operations in this project — syncing a workspace, kicking off a farm build, checking whether a job is still running — are individually trivial but collectively annoying because each one normally means: SSH into the right machine, remember the exact command and its flags, run it, then remember to go check on it later. None of that is hard. All of it is friction that adds up specifically for the small, frequent tasks that don't justify opening a full terminal session — which is exactly the case a chat command is good at.</p>
+
+        <h2>What it actually is</h2>
+        <p>A small bot living in a Slack channel, wired to the same <a href="p4guard.html">workspace and farm tooling</a> the rest of this project uses. An engineer types something like <code>@bot sync frontend_dev and kick a lint build</code>, and the bot parses that into a specific action, executes it against the actual workspace/farm APIs, and posts the result back in the same thread — including a follow-up message when a long-running build finishes, so nobody has to remember to go check.</p>
+
+        <h2>Why a whitelist, not general command execution</h2>
+        <p>The tempting version of this project lets the LLM translate any natural-language request into an arbitrary shell command. That's also the version that's one ambiguous phrasing away from something destructive running against a real workspace. Instead, the bot maps natural language onto a small, explicit set of pre-approved operations — <code>sync</code>, <code>launch_build</code>, <code>job_status</code>, and a handful of others — each with a fixed, parameterized implementation. The LLM's job is narrow: figure out <em>which</em> whitelisted operation was meant and extract its parameters, never to construct or execute a command directly.</p>
+
+        <figure class="figure">
+<pre><code>WHITELIST = {
+  "sync":         lambda ws: run_sync(ws),
+  "launch_build": lambda ws, kind: submit_build(ws, kind),
+  "job_status":   lambda job_id: query_status(job_id),
+}
+# the model picks an operation + args from here — it never
+# constructs a command string that gets executed directly
+</code></pre>
+          <figcaption class="figure-cap">Fig. 1 — the LLM never has execution power beyond this table. A misparsed request in the worst case calls the wrong whitelisted function with the wrong (still-validated) arguments, not an arbitrary command.</figcaption>
+        </figure>
+
+        <h2>Confirmation for anything with a blast radius</h2>
+        <p>Even within the whitelist, not every operation is equally safe to fire on a best-guess parse. Read-only operations like checking a job's status execute immediately. Anything that changes state — a sync, a build launch — gets a one-line confirmation echoed back before it runs ("sync <code>frontend_dev</code> to head — confirm?"), so a misheard workspace name gets caught by the person who typed the request, in the two seconds before it would have mattered, rather than after.</p>
+
+        <h2>Monitoring in the same surface</h2>
+        <p>The part that saves the most actual time isn't the triggering — it's not having to go check back. A build kicked off through the bot posts its own completion status back into the thread it was launched from, success or failure, without the engineer needing to poll it. Combined with the <a href="release-quality-gate.html">hung-job detection</a> from the release gate, a build that's stalled gets flagged in the same thread too, instead of silently sitting unfinished until someone happens to look.</p>
+
+        <h2>Where it stops</h2>
+        <p>This is deliberately not a general admin interface. It's scoped to the small set of low-risk, frequent operations that were previously worth a full terminal session only because there was no faster path — not a replacement for direct access to the workspace or farm for anything more involved.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="release-quality-gate.html">← Release-Triggered Quality Gate</a>
+        <a href="neuronease.html">NeuronEase: a memristor crossbar for neural-network inference →</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+</body>
+</html>

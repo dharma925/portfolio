@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="A waveform debug agent that narrows a natural-language question down to a small signal-and-time window before it ever reaches the LLM, keeping token spend low without losing reliability.">
+  <title>Spec-Aware Semantic-Temporal Debug Agent — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Project</span><span>AI debug tooling · MCP</span><span>Personal project</span></p>
+      <h1>Spec-Aware Semantic-Temporal Debug Agent</h1>
+      <p class="standfirst">A simulation waveform can carry thousands of signals across millions of cycles. An LLM's context window can't. This agent's entire job is figuring out the handful of signals and the narrow slice of time that actually matter for one question, before spending a single token on the answer.</p>
+
+      <div class="prose">
+        <h2>Waveforms, briefly</h2>
+        <p>When a digital simulation runs, the simulator can record every signal's value over time into a waveform database — effectively a giant table of "signal, time, value." A VCD (Value Change Dump) is the common text interchange format for this: every time a signal changes, one line records the new value and the timestamp. For anything past a trivial testbench, that file is enormous — a few seconds of real simulated time can produce millions of change events across thousands of signals.</p>
+
+        <h2>Why "just paste the waveform" doesn't work</h2>
+        <p>The obvious approach — dump the relevant waveform region to text and hand it to an LLM — fails for two related reasons. First, cost and context: even a "small" slice can be tens of thousands of lines, most of them irrelevant clock toggles and unrelated signals. Second, and more important, signal: burying the three signals that actually matter inside ten thousand lines of noise makes the model's job harder, not easier — LLMs are not immune to being distracted by irrelevant context, and a debug agent that reasons worse with more data defeats the purpose.</p>
+
+        <h2>The semantic-temporal query adapter</h2>
+        <p>The fix is to never hand the model raw waveform data — only ever a narrow, purpose-built slice, fetched on demand through a tool. The adapter does two kinds of narrowing:</p>
+        <ul>
+          <li><strong>Semantic</strong> — given a natural-language question ("why did the FIFO's <code>full</code> flag stay high after the drain sequence"), map it to a small set of candidate signal names using the design's signal hierarchy and naming conventions, plus whatever spec text is available describing that block's intended behavior. This step never touches the waveform itself — it's pure name/spec matching.</li>
+          <li><strong>Temporal</strong> — once candidate signals are identified, find the time window actually relevant to the question (the edge where a flag changed, plus a small margin before and after) rather than the whole run. A question about one transition doesn't need the previous ten thousand cycles.</li>
+        </ul>
+        <p>Only after both narrowings does the agent extract the actual signal values, from the waveform database's own export utility, for exactly that signal set and exactly that window — and that's the only piece that reaches the model.</p>
+
+        <figure class="figure">
+<pre><code>query_signal_window(
+  signals=["fifo.full", "fifo.wr_en", "fifo.rd_en", "fifo.count"],
+  start="1044200ns", end="1044850ns"
+)
+# returns a few hundred rows, not a few million
+</code></pre>
+          <figcaption class="figure-cap">Fig. 1 — the MCP tool the agent actually calls. Signal set and time window are both arguments, not something inferred after the fact from a full dump.</figcaption>
+        </figure>
+
+        <h2>Why MCP fits this well</h2>
+        <p>Model Context Protocol gives the agent a clean way to expose "query a signal window" as a callable tool with a typed schema, rather than stuffing waveform-fetching logic into a prompt template. The agent's reasoning loop is: propose a signal/window hypothesis, call the tool, look at the (small) result, refine the hypothesis if the first guess was wrong, and repeat — usually two or three rounds before it has enough to answer. Each round costs a few hundred tokens instead of the entire waveform, and each round is a real, verifiable data fetch rather than the model hallucinating what a waveform probably looks like.</p>
+
+        <h2>Where it plugs in</h2>
+        <p>This agent runs as another atom in the same <a href="agentic-orchestrator.html">orchestrator framework</a> — triggered by the <a href="regression-lifecycle-manager.html">regression lifecycle manager</a> whenever a failure gets escalated rather than auto-fixed, so a component owner's first look at a real failure already comes with a first-pass hypothesis and the exact signal window that supports it, instead of a raw log and an invitation to start from zero.</p>
+
+        <h2>Where narrowing can go wrong</h2>
+        <p>The semantic step is the one place a bad guess costs the most: if the naming/spec match misidentifies the relevant signals, the temporal narrowing and the query that follows are precisely targeted at the wrong thing, and the agent will confidently answer a question that wasn't asked. The mitigation is to keep the semantic step's confidence visible — when the match is ambiguous, the agent surfaces its top few candidate signals instead of silently picking one, so a wrong guess is easy to spot and correct rather than buried in a plausible-sounding wrong answer.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="regression-lifecycle-manager.html">← Autonomous Regression Lifecycle Manager</a>
+        <a href="workspace-health-checker.html">Workspace Health Checker →</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+</body>
+</html>

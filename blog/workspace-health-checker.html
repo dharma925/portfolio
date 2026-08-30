@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="A pre-submit sanity gate that catches a broken workspace before check-in, with an embedded LLM that reads the failure and drafts the fix instead of just printing an error.">
+  <title>Workspace Health Checker — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Project</span><span>Pre-submit gate</span><span>Personal project</span></p>
+      <h1>Workspace Health Checker</h1>
+      <p class="standfirst">Most workspace breakages aren't caused by a bad change — they're caused by a stale or drifted local environment that a bad change simply exposes. This gate checks the environment, not just the diff, before <code>submit</code> is allowed to succeed.</p>
+
+      <div class="prose">
+        <p>The <a href="p4guard.html">P4Guard</a> post covers <code>policy-gate</code> and <code>lint-gate</code> — two triggers that inspect what a changelist actually contains. This one is different: it inspects the state of the <em>workspace itself</em>, before content is even considered, because a large share of "why did my submit fail" problems trace back to something wrong with the local checkout rather than the change.</p>
+
+        <h2>What "unhealthy" looks like</h2>
+        <p>A workspace can drift from a known-good state in ways that have nothing to do with what you're about to submit:</p>
+        <ul>
+          <li>A <strong>stale sync</strong> — testing against files from three days ago while the depot has since moved on, so a passing local test proves nothing about the actual target.</li>
+          <li>A <strong>version mismatch</strong> — a required tool or library resolved to a different version than the one the project pins, silently changing behavior.</li>
+          <li>A <strong>conflicted mapping</strong> — overlapping workspace views that leave a file resolving to the wrong depot path.</li>
+        </ul>
+        <p>Every one of these produces a confusing, misleading failure that looks like it's about the change being submitted, when it's actually about the environment the change was tested in.</p>
+
+        <h2>Where the check runs</h2>
+        <p>It hooks in as an earlier stage than <code>policy-gate</code> in the P4Guard trigger chain — cheapest checks first, since there's no point inspecting change content from a workspace that's already known to be in a bad state. It runs a small, fast battery: sync freshness against the target stream, tool/library version resolution against the pinned manifest, and a mapping-conflict check against the workspace spec. All three are fast enough to run on every submit attempt without adding meaningful latency.</p>
+
+        <h2>The embedded LLM's actual job</h2>
+        <p>A sanity check that just prints <code>FAIL: stale sync</code> is only half useful — the engineer still has to know the fix is <code>p4 sync</code>, not something scarier. The embedded agent's job is narrow and specific: take the exact failure signature, plus the workspace's current spec, and draft the specific command that resolves it — not a general troubleshooting essay, one copy-pasteable next step. For a stale sync, that's the exact <code>sync</code> invocation for the affected paths. For a version mismatch, it's which pinned version to switch to and how. Keeping the agent's scope this narrow is deliberate: it's drafting a mechanical fix for a diagnosed, known category of problem, not reasoning freely about an open-ended failure.</p>
+
+        <figure class="figure">
+<pre><code>REJECT: workspace-health
+  reason: stale sync (workspace at @1044, stream head @1058)
+  suggested fix:
+    p4 sync //frontend_asic/dev/...@1058
+</code></pre>
+          <figcaption class="figure-cap">Fig. 1 — the rejection message is the whole point. A reason without a fix just relocates the debugging effort; a reason with an exact fix closes it on the spot.</figcaption>
+        </figure>
+
+        <h2>What it actually prevents</h2>
+        <p>Without this gate, a broken workspace tends to surface downstream instead of at the point of submit — as a confusing regression failure that isn't really a regression, or a merge conflict that only makes sense once someone notices the sync gap, or a version-mismatch bug that takes a while to trace back to "your tool version wasn't what the project expected." Catching it at the gate turns all three into a one-line, self-explaining rejection at the moment the engineer is already looking at their terminal, instead of a mystery someone else inherits later.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="semantic-debug-agent.html">← Spec-Aware Semantic-Temporal Debug Agent</a>
+        <a href="release-quality-gate.html">Release-Triggered Quality Gate →</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+</body>
+</html>

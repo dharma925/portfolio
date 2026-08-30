@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="An agent that closes the loop on regression runs end to end — sync, launch, triage, selective relaunch, and a debug report, with no human required in the middle.">
+  <title>Autonomous Regression Lifecycle Manager — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Project</span><span>Regression automation</span><span>Personal project</span></p>
+      <h1>Autonomous Regression Lifecycle Manager</h1>
+      <p class="standfirst">A regression suite doesn't run itself — someone has to sync, launch, notice what broke, decide whether it's worth a retry, and tell the right person. This agent, built on top of the <a href="agentic-orchestrator.html">orchestrator framework</a>, does all of it without a human in the loop.</p>
+
+      <div class="prose">
+        <p>Running a regression suite once is easy: sync a workspace, kick off the jobs, wait, read the results. Running it as a <em>lifecycle</em> — every night, unattended, correctly, for months — is a different problem. Each of those four steps has a failure mode a human normally catches by hand: syncs get stale, jobs die on a bad compute node, "what broke" needs judgment to separate a real bug from a flaky retry, and someone has to actually notice and act on the result before morning stand-up. This agent exists to close that loop end to end.</p>
+
+        <h2>The four stages</h2>
+        <ul>
+          <li><strong>Sync</strong> — bring every relevant workspace up to the target changelist or tag before anything launches, so a stale checkout never silently produces a stale result.</li>
+          <li><strong>Launch</strong> — submit the suite to the compute farm, tracking job IDs against the state machine described in the <a href="agentic-orchestrator.html">orchestrator post</a> so a restart never double-launches.</li>
+          <li><strong>Triage</strong> — once results land, classify each failure: a known-flaky test that just needs a retry, a local/environmental issue with a mechanical fix, or a real regression that needs a person.</li>
+          <li><strong>Report</strong> — dispatch a debug report scoped to what actually changed, not a wall of every result.</li>
+        </ul>
+
+        <h2>Selective relaunch, not full relaunch</h2>
+        <p>The naive version of "retry on failure" reruns the entire suite. For a suite with a few thousand tests, that's enormously wasteful when only a handful failed. The lifecycle manager keeps a per-test result history, so a relaunch means exactly one thing: resubmit the specific failing test IDs from the specific failing run, nothing else. That distinction — relaunching a subset versus relaunching everything — is most of where the "autonomous" part earns its keep, because it's the difference between a retry costing a few compute-minutes and costing an entire farm-night.</p>
+
+        <h2>Deciding what's safe to auto-fix</h2>
+        <p>Not every failure needs a human. Some have a mechanical, known-safe fix: a stale workspace that just needs a re-sync, a license checkout that timed out and should be retried once, a test that depends on a scratch directory that wasn't cleaned up from a previous run. The agent keeps a small, explicit list of these known-safe patterns — matched against the failure signature, not guessed by the LLM — and only auto-applies a fix when the match is exact. Anything that doesn't match a known pattern gets escalated, not guessed at. That asymmetry is deliberate: false positives on "safe to auto-fix" are far more expensive than a slightly-too-conservative escalation policy.</p>
+
+        <figure class="figure">
+<pre><code>KNOWN_SAFE_FIXES = {
+  "stale_workspace":     resync_workspace,
+  "license_timeout":     retry_once,
+  "stale_scratch_dir":   clean_and_retry,
+}
+# anything else -> escalate to component owner, don't guess
+</code></pre>
+          <figcaption class="figure-cap">Fig. 1 — the fix table is intentionally small and exact-match. Growing it happens by observing real failure signatures, not by trying to generalize ahead of evidence.</figcaption>
+        </figure>
+
+        <h2>Routing, not just reporting</h2>
+        <p>A debug report that goes to one shared channel gets skimmed and ignored. The lifecycle manager maps each failing test back to the component it exercises — using ownership metadata checked into the repo alongside the test itself — and routes the report to whoever owns that component, with just the failure signature, the relevant log excerpt, and a link to the full run. The report a component owner gets is scoped to their component, not the whole suite's overnight output.</p>
+
+        <h2>Where the off-hours angle comes from</h2>
+        <p>Interactive compute and license seats are scarce during the day — everyone's iterating on their own change. They're mostly idle overnight. A lifecycle manager that only launches once everyone's synced up and waits for a human to notice results the next afternoon is leaving that idle capacity on the table. Scheduling full regression launches for the overnight window, and having triage and routing happen automatically before anyone's at their desk, means the farm and license pool are doing useful work exactly when nothing else is competing for them, and a broken build is already scoped and routed by the time someone would have gone looking for it manually.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="agentic-orchestrator.html">← State-Aware Agentic Workflow Orchestrator</a>
+        <a href="semantic-debug-agent.html">Spec-Aware Semantic-Temporal Debug Agent →</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+</body>
+</html>

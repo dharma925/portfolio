@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="A state-machine framework for composing LLM agents into long-running automation jobs — plug-and-play atoms, context hydration, and a pipeline-health dashboard.">
+  <title>State-Aware Agentic Workflow Orchestrator — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../sources/Dharma_Resume.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Project</span><span>Agent frameworks · CI automation</span><span>Personal project</span></p>
+      <h1>State-Aware Agentic Workflow Orchestrator</h1>
+      <p class="standfirst">LLM agents are good at deciding what to do next. They're bad at remembering what they already did three hours and one crash ago. This is a framework built to fix that second problem, not the first.</p>
+
+      <div class="prose">
+        <p>This is the framework layer underneath <a href="p4guard.html">P4Guard</a> — the piece that turned "a script that calls an LLM" into something that can run a multi-hour EDA-style job, survive a restart, and pick up exactly where it left off instead of starting over or double-running a step.</p>
+
+        <h2>The tool-use loop, in short</h2>
+        <p>If you haven't built an LLM agent before, the core loop is simple: the model gets a prompt describing available tools, it picks one and proposes arguments, your code actually runs that tool and hands the result back, and the model sees the result and decides what to do next. Repeat until the model says it's done. That loop is easy to build for something that finishes in thirty seconds. It gets much harder when a single step — a synthesis run, a regression suite, a fabrication-style measurement sweep — takes hours, because now the process running the loop might not even be alive when the step finishes.</p>
+
+        <h2>The problem this framework solves</h2>
+        <p>A naive agent loop keeps its state in memory: a Python list of messages, a running total of what's happened so far. That's fine until the process restarts — a deploy, a crash, a machine reboot — at which point the agent has amnesia. It doesn't know which of its five pending jobs actually finished, which are still running, and which it should re-launch. For a chat assistant that's an inconvenience. For something orchestrating real jobs against a compute farm, re-launching a job that's already running, or silently forgetting one that crashed, is a correctness bug.</p>
+
+        <h2>Atoms: the unit of composition</h2>
+        <p>The framework is built around small, single-purpose units I call <strong>atoms</strong> — each one declares the state it needs to run, the state it produces, and whether it's idempotent (safe to re-run if you're not sure it finished). A "launch job" atom is idempotent if it checks for an existing job ID before submitting a new one. A "parse results" atom is naturally idempotent — reading a file twice does no harm. Composing a workflow means wiring atoms into a graph, not writing a monolithic script that does everything in one function.</p>
+
+        <h2>The state machine core</h2>
+        <p>Sitting underneath the atoms is a hierarchical state machine (HSM). Each atom maps to one or more states, and the machine's current state — plus everything the atoms have written to it — is the only thing that matters for "what happens next." Critically, that state isn't kept in process memory: every transition is persisted to disk before the next atom runs. That single design choice is what makes the whole thing state-aware rather than just stateful — on restart, the orchestrator doesn't resume a Python object, it <em>rehydrates</em> a state machine from its last durable checkpoint and re-derives what to do next from the state itself, not from assumptions about what a live process was doing when it died.</p>
+
+        <figure class="figure">
+<pre><code>checkpoint = {
+  "job": "lint_sweep_007",
+  "state": "AWAITING_FARM_RESULT",
+  "context": {"submitted_ids": [4471, 4472], "retries": 0},
+  "updated_at": "2026-08-30T02:14:11Z"
+}
+</code></pre>
+          <figcaption class="figure-cap">Fig. 1 — a checkpoint is just state plus context. Rehydration means: load this, ask "what does AWAITING_FARM_RESULT do on restart", and let the state machine's own transition table answer instead of guessing.</figcaption>
+        </figure>
+
+        <h2>Where the LLM actually sits</h2>
+        <p>The model isn't in the critical path of every transition — most state transitions are deterministic (a job either finished or it didn't). The LLM comes in at the atoms that need judgment: deciding whether a failure looks like a flaky infrastructure hiccup worth an automatic retry versus a real regression worth escalating, or summarizing a batch of results into something a human would actually want to read. Keeping the deterministic plumbing deterministic, and reserving the model for the genuinely ambiguous decisions, is most of what makes the system reliable enough to trust unattended.</p>
+
+        <h2>The dashboard</h2>
+        <p>All of that state is only useful if someone can see it. A small React front end talks to a Node service that reads the same checkpoint store the orchestrator writes to — no separate "reporting" pipeline to keep in sync, just a read-only view onto the actual source of truth. It shows every active workflow's current state, how long it's been there, and a timeline of transitions, which turns "is anything stuck?" from a log-grepping exercise into something you can see at a glance.</p>
+
+        <h2>What plugging in another agent looks like</h2>
+        <p>Because atoms are the unit of composition, adding a new capability — a different LLM provider, a new kind of check — means writing one new atom with a declared input/output contract and dropping it into the graph. The orchestrator doesn't need to know anything about what's inside the atom, only what state it reads and what state it produces. That's the "plug-and-play" part: the framework doesn't care whether an atom calls an LLM, shells out to a tool, or does neither.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="p4guard.html">← P4Guard: a self-enforcing Perforce CI platform</a>
+        <a href="regression-lifecycle-manager.html">Autonomous Regression Lifecycle Manager →</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+</body>
+</html>
