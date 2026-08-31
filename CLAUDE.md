@@ -16,49 +16,57 @@ When there's a choice about what to emphasise, emphasise that.
 
 ---
 
-## Current state
+## Current state (as of 2026-09-01)
 
-Rebuilt and actually committed to the working tree as of 2026-08-29:
+    index.html      home — hero, spec panel, stack, capabilities,
+                    experience, projects, writing, about, contact
+    projects.html   Featured (P4Guard, NeuronEase, TiO2 MIM, FCNN) +
+                    Earlier work (same .entry format as Featured, not
+                    a compact list — see "Earlier work format" below)
+    blog.html       writing index — 12 posts (see Blog posts below)
+    blog/*.html     the posts themselves
+    style.css       all styling, shared by every page (repo root, NOT
+                    assets/ — that path never existed in this repo)
+    sources/        résumé PDF + images
+    sources/neuronease/  real result images extracted from
+                    NeuronEase2_END.pptx's embedded media — not
+                    recreated, actual ADC-readout output
 
-    index.html    home — hero, spec panel, flow strip, capabilities,
-                  experience, projects, writing, earlier work, about, contact
-    blog.html     writing index
-    blog/*.html   5 posts (see below) — a 6th, fpga-neural-network.html,
-                  is still open work
-    style.css     all styling, shared by every page (at repo root, NOT
-                  assets/ — that path never existed in this repo)
-    sources/      resume PDF + images
+`about.html`, `xplorations.html`, and the two real `xplorations/*.html`
+pages are meta-refresh redirect stubs (into `index.html#about`,
+`blog.html`, and `blog/neuronease.html` respectively) — not deleted,
+because old `works/` pages still link to `about.html` from their inline
+nav script. `works/project_template.html` and
+`xplorations/blog_template.html` were unused scaffolding and were
+deleted outright (nothing ever linked to them).
 
-The Perforce project (P4Guard, mentioned as in-progress further down this
-file as of the same date) was finished later on 2026-08-29 and added to
-the site the same day: `blog/p4guard.html`, plus entries in the Projects
-section of `index.html`, the Featured section of `projects.html`, the
-Writing archive on `index.html`, and the posts list in `blog.html` — all
-positioned first, ahead of NeuronEase, since it's the most directly
-relevant project to the front-end integration/CI/EDA-automation roles this
-site targets. It uses Mermaid (loaded via CDN as an ES module, initialized
-inline at the bottom of that one page only, themed to match the site's
-palette) for its architecture/sequence/topology diagrams — the first use
-of Mermaid or any external script on this site. If more posts need
-diagrams, follow that page's pattern rather than adding a site-wide
-Mermaid include.
+**Earlier work format**: `projects.html`'s Earlier Work section uses
+full `.entry` articles (title, description, `.readmore` link, `.tags`)
+— same as Featured, not the old compact `.archive` list. For a project
+with no real content yet (see `works/` below), use an honest
+"Write-up pending" `.entry-when` and a one-line placeholder description
+instead of a `.readmore` link — don't link out to a page that still has
+Lorem ipsum on it.
 
-Not yet rebuilt — still the original 4-year-old pages:
+### `works/` pages — real vs. still-placeholder
 
-    works/*.html        5 project pages, linked from "Earlier work"
-    xplorations.html    linked from "Earlier work" (not currently in nav)
-    xplorations/*.html  2 more old pages, not linked from anywhere current
+Of the five original `works/*.html` pages:
 
-`about.html` is a redirect stub (meta refresh to `index.html#about`), not
-deleted — 11 old pages under `works/` and `xplorations/` still link to it
-from their inline nav script, and rewriting all of those wasn't in scope
-for this pass. If those pages ever get rebuilt, delete `about.html` for
-real and drop the redirect.
-
-Content on the home page and in the two project blog posts was pulled
-from a real resume (RESUME2026.pdf) reviewed 2026-08-29 — not invented.
-The resume's placeholder identity fields (sample had `atim@gmail.com`,
-`NAME`, etc.) were swapped for the real values below.
+- `works/FPGA_Image_processor.html` — rebuilt with real content from
+  its GitHub README (github.com/dharma925/FPGA-image-processor).
+  Honestly marked "in progress" — the repo says integration is
+  incomplete.
+- `works/FPGA_NN.html` — retired to a redirect into
+  `blog/fcnn-fpga.html`. The GitHub repo behind it
+  (github.com/dharma925/NN-on-FPGA, project name `digit_classifier`) is
+  the same underlying project as that post, already covered there in
+  full — don't maintain a duplicate.
+- `works/FPGA_Snake_Game.html`, `works/risc_v_processor.html`,
+  `works/x86_processor.html` — **still have Lorem ipsum.** Their linked
+  GitHub repos (`FPGA-Snake-game`, `X86-Processor`, `RISC-V-processor`)
+  all 404 — no public source to write real content from. Dharma said
+  (2026-08-31) he'd send real details/repo links later. Don't invent
+  content for these — ask, or check if he's sent details since.
 
 ---
 
@@ -70,21 +78,26 @@ Everything is CSS custom properties in `:root` at the top of
 - **Type**: IBM Plex Sans (body), IBM Plex Sans Condensed (headings),
   IBM Plex Mono (labels, metadata, code). Loaded from Google Fonts.
 - **Palette**: cool greys on near-white; teal `--pass` (#0E7C86) as the
-  single accent. The teal reads as "pass" in a build-status sense, which
-  is deliberate — it matches the domain.
-- **Signature element**: the flow strip on the home page (Lint → CDC →
-  Simulation → Report). Stages resolve left-to-right on scroll via
-  IntersectionObserver, and are all shown immediately under
-  `prefers-reduced-motion: reduce`. Keep that behaviour if you touch it.
+  single accent.
+- **Signature element**: the "Stack" band right under the hero
+  (`.flow` wrapper + `.caps`/`.cap`/`.tags` inside it) — languages/
+  tools grouped by category, pulled from the résumé's skills list. This
+  replaced an earlier "Lint → CDC → Simulation → Report" flow-strip
+  concept (with `.stages`/IntersectionObserver scroll-reveal) that
+  Dharma said didn't read well; that CSS/JS was removed, not just
+  unused. Don't resurrect `.stages` — it no longer exists.
 - **Layout**: hairline grids via a 1px border on each cell (`.caps`,
-  `.archive`, `.contact-list`, `.shot-grid` all do this). Earlier drafts
-  used a `--rule`-background-peeking-through-the-gap trick instead —
-  don't go back to that: with `grid-template-columns:repeat(auto-fit,…)`
-  and an item count that doesn't evenly fill the last row, auto-fit still
-  reserves the empty column tracks, and the container background shows
-  through them as visible blank grey cells. Per-cell borders don't have
-  that failure mode. `.stages` is exempt — it's a fixed `repeat(4,1fr)`
-  with always exactly 4 items, so it's safe as-is.
+  `.archive`, `.contact-list`, `.shot-grid` all do this). Don't use the
+  `--rule`-background-peeking-through-the-gap trick — with
+  `grid-template-columns:repeat(auto-fit,…)` and an item count that
+  doesn't evenly fill the last row, auto-fit still reserves the empty
+  column tracks and the container background shows through as visible
+  blank grey cells. Per-cell borders don't have that failure mode.
+- **Diagrams**: Mermaid, loaded via CDN as an ES module and initialized
+  inline at the bottom of whichever post needs it (see `blog/p4guard.html`,
+  `blog/neuronease.html`, `blog/fcnn-fpga.html` for the exact init
+  block/theme vars) — not a site-wide include. Copy that pattern for any
+  new post that needs a diagram.
 - No dark mode currently. If added, do it with a
   `prefers-color-scheme` block overriding the `:root` variables.
 
@@ -96,84 +109,122 @@ Everything is CSS custom properties in `:root` at the top of
                                            (stacks below 52rem)
     .prose                                 article body (blog posts)
     .tags                                  monospace tech chips
+    .postnav                               prev/next post nav (flexes
+                                           two links to opposite ends;
+                                           fine with just one)
 
 ---
 
 ## Content rules — important
 
-**1. No TI internal detail on the public site.**
+**1. No TI internal detail on the public site — even under a new name.**
 
-Internal tool codenames (Atom8, RegaBot, Tron), architecture specifics,
-and internal efficiency metrics ("2 person-months saved", "6x MTTR") are
-on the *resume*, which is a private document handed to a named recruiter.
-They are deliberately **not** on the public site.
+Internal tool codenames (Atom8, RegaBot, Tron), real TI infrastructure
+specifics (e.g. internal VM pool / DNS details), and internal efficiency
+metrics tied to TI's actual team ("2 person-months saved", "6x MTTR")
+stay on the *résumé* — a private document — and off the public site.
+He still works at TI; a public, indexed page describing internal
+systems is a different exposure than a résumé or an interview.
+Renaming a tool doesn't fix this — employer + dates are public, so
+anyone at TI would still recognise the system.
 
-He still works at TI. A public, indexed page describing internal systems
-is a different exposure from a resume or an interview. The site describes
-*capabilities* — CI ownership, quality gates, regression reporting — not
-named internal systems.
+**The resolved pattern (confirmed with Dharma 2026-08-31):** when the
+résumé lists TI-built systems with real internal detail — as it now
+does, six of them, under "Professional Experience" — write the
+corresponding blog posts as Dharma's own **standalone personal
+rebuilds** of the same architecture/pattern, not descriptions of TI's
+actual systems. Concretely:
+- `blog/agentic-orchestrator.html`, `blog/regression-lifecycle-manager.html`,
+  `blog/semantic-debug-agent.html`, `blog/workspace-health-checker.html`,
+  `blog/release-quality-gate.html`, `blog/chatops-orchestrator.html`
+  all share one fictional world with `blog/p4guard.html` (the same
+  stand-in chip, LSF-shaped farm, Slack notifier, mock EDA tools) and
+  are explicitly kicker-tagged "Personal project."
+- No real TI infra names (no Infoblox/VM-pool-style specifics), no
+  internal metrics attributed as TI's measured results. Grep for
+  "Texas Instruments", "Infoblox", "Webex", "Outlook", "Confluence"
+  (as a literal product name), "Atom8", "RegaBot", "Tron", "Ralph"
+  before considering any of these six posts done.
+- If adding a 7th post in this family, follow the same pattern.
 
-Renaming the tools does not solve this. The employer and dates are on the
-site; anyone at TI would recognise the system regardless of the name.
+**2. Nothing goes on the site — or in the résumé — that isn't actually
+built and verified.**
 
-**2. Nothing goes on the site that isn't built yet.**
+P4Guard (verified against a real local Helix Core server), the six
+"Personal project" posts above, NeuronEase, and FCNN on FPGA are all
+written from and cross-checked against real source (a real project
+deck, or the actual pushed RTL/repo) — not from a plan or a résumé
+bullet taken at face value. Two known open issues from this rule:
 
-The Perforce project (P4Guard — real p4python-shaped submit triggers,
-stream/workspace tooling, an LSF-shaped CI farm, build-health reporting)
-was finished on 2026-08-29 and is now on the site (`blog/p4guard.html`) —
-written from what was actually built and verified working end-to-end
-against a real local Helix Core server, not from the plan. If a future
-pass adds capability to that project, update the post to match — same
-rule applies going forward: don't describe something on the public site
-that isn't actually built and working yet.
+- **P4Guard** is not yet linked to a public GitHub repo from its post
+  (source lives outside this repo). Don't guess the URL — wait for it.
+- **FCNN on FPGA / the résumé's "extended into an on-chip
+  image-processing pipeline" claim**: when the actual NN-on-FPGA repo
+  RTL was read directly (2026-09-01), `convolution_layer.v` and
+  `maxpool_layer.v` turned out to be **empty stub files** — no ports,
+  no logic, nothing wired to them. That image-processing extension is
+  NOT in this repo. Dharma confirmed (2026-09-01) it exists elsewhere
+  and will send a link later. Until that link exists, don't put that
+  claim back on `blog/fcnn-fpga.html` — and flag to Dharma that the
+  same claim is still sitting on the actual résumé PDF
+  (`sources/Dharma_Resume_DVAI.pdf`), unverified.
 
-**3. Don't invent project detail.**
+**3. Don't invent project detail — go find the real source instead.**
 
-The five `works/` pages currently all share the same description text
-(the memristor blurb, copy-pasted). They need real content, but that
-content has to come from Dharma — don't generate plausible-sounding
-specifics for the FPGA image processor, snake game, RISC-V core, or x86
-core. Ask.
+When real detail is missing, the fix demonstrated twice now is to go
+get it, not invent it or leave it thin:
+- NeuronEase was rewritten after reading `NeuronEase2_END.pdf` and
+  extracting real result images from `NeuronEase2_END.pptx`'s embedded
+  media (both live in `~/Desktop/Resume/`, one level up from this repo).
+- FCNN on FPGA was rewritten after reading the actual pushed Verilog in
+  github.com/dharma925/NN-on-FPGA directly (not just the README).
+
+For the three still-placeholder `works/` pages (Snake Game, RISC-V,
+x86), that source doesn't exist publicly — their linked repos 404. Ask
+Dharma rather than filling the gap with plausible-sounding specifics.
 
 ---
 
 ## Blog posts
 
-Two are general engineering essays — they demonstrate judgment relevant
-to the target roles without disclosing anything about TI:
+`blog.html` lists all of these; the postnav chain (prev/next links at
+the bottom of each post) runs:
+`p4guard → agentic-orchestrator → regression-lifecycle-manager →
+semantic-debug-agent → workspace-health-checker → release-quality-gate →
+chatops-orchestrator → neuronease → mim-fabrication → fcnn-fpga`
+`pre-submit-quality-gates` and `regression-reports` are a separate
+two-post chain (essays, not in the project chain above).
 
-- `blog/pre-submit-quality-gates.html` — why pre-submit beats
-  post-submit, what earns a place in a blocking gate, rejection messages
-  as UI, fail-open vs fail-closed.
-- `blog/regression-reports.html` — new vs known failures, clustering by
-  cause, flakiness, coverage as trend, push vs pull.
+**Two general engineering essays** — demonstrate judgment without
+disclosing anything about TI:
+- `blog/pre-submit-quality-gates.html`
+- `blog/regression-reports.html`
 
-Three are his own project writeups, with real data (all written and live):
+**Project writeups, real content, all live:**
+- `blog/p4guard.html` — see Content rule #2 (public repo link pending).
+- `blog/agentic-orchestrator.html` through `blog/chatops-orchestrator.html`
+  (6 posts) — see Content rule #1. Personal-rebuild framing, no TI trace.
+- `blog/neuronease.html` — 2×2 SPICE proof → box-blur kernel → INT8 CNN
+  (12 3×3 kernels, 20,410 params) on a 9×8 crossbar, MNIST results, real
+  cycle-count stats (9 cyc/kernel, ~12 cyc/pixel). Advisor: Dr. Srinivasu
+  Bodapati. Has a Mermaid architecture diagram (abstracted, not the
+  literal schematic — Dharma asked not to "put the solution openly") and
+  6 real result images in `sources/neuronease/`.
+- `blog/mim-fabrication.html` — TiO2 MIM cells. Real numbers: ~97nm
+  TiO2, V_SET 4.1V, I_on/I_off 10^4 (Cu) vs 10^2 (Al), Al underperformed
+  due to native Al2O3 at the interface.
+- `blog/fcnn-fpga.html` — 256→128→10 FCNN, hand-instantiated neurons
+  (128 + 10, not a generate loop), hardware ReLU inside each neuron, a
+  real iterative Taylor-series hardware exponential behind softmax
+  (argmax decision, since softmax is monotonic — the Taylor unit's
+  actual probabilities aren't on the decision's critical path). Zybo Z7.
+  Verification depth stated honestly: only `adder` has a real testbench.
+  See Content rule #2 re: the image-processing extension NOT being in
+  this one.
 
-- `blog/p4guard.html` (2026-08-29) — a live local Perforce Helix Core
-  server with real Python submit triggers, a CI orchestrator, an
-  LSF-shaped compute farm, mock-but-realistic EDA tool wrappers, and a
-  regression dashboard. Written from and verified against the actual
-  working system at the time of writing (source lives outside this repo,
-  in its own project directory) — not yet linked to a public GitHub repo
-  from this post; see Open work.
-- `blog/neuronease.html` — memristor crossbar, analog MAC, Stanford
-  ReRAM model, Cadence Virtuoso, Verilog-A. No performance numbers
-  (accuracy, crossbar size, energy) were available when this was
-  written — don't invent them if you're tempted to fill the gap; ask
-  Dharma and add them if he has them.
-- `blog/mim-fabrication.html` — TiO2 MIM cells. Real numbers:
-  ~97nm TiO2, V_SET 4.1V, I_on/I_off 10^4 (Cu) vs 10^2 (Al),
-  Al device underperformed due to native Al2O3 at the interface.
-
-Still open (not yet written — see Open work):
-
-- `blog/fpga-neural-network.html` — FCNN on Zybo Z7, 16-bit fixed point,
-  ~661 LUTs for a 256-input neuron.
-
-To add a post: copy an existing file in `blog/` as a template, then add
-an entry to the list in `blog.html` and (if it should be featured) to the
-Writing section of `index.html`.
+To add a post: copy an existing file in `blog/` as a template (match its
+nav block exactly), then add an entry to `blog.html`'s list and wire it
+into the postnav chain at the right point.
 
 ---
 
@@ -187,38 +238,34 @@ Writing section of `index.html`.
     Location    Bengaluru, India
 
     TI          Design Verification Engineer, Jul 2024 – present
-                (official designation is "Design Verification Engineer")
     TI intern   Digital Design Intern, Jan – Jul 2023
                 UCD3138 digital power supply controller
     Education   B.Tech EE (Hons), IIT Mandi, 2020–2024, CGPA 8.68
 
-    Resume PDF  sources/Dharma_Resume.pdf  ← ACTUAL current filename
-                (nav + contact + hero CTA all link to this exact path;
-                this is still the OLD resume file — see Open work #0)
+    Résumé PDF  sources/Dharma_Resume_DVAI.pdf  ← current, real, linked
+                site-wide as of 2026-08-31. An older
+                sources/Dharma_Resume_CLG_INTERN.pdf also exists
+                (renamed from the original tracked file) but nothing
+                on the site links to it.
+
+GitHub repos that actually exist publicly under dharma925 (checked
+2026-08-31): `portfolio`, `FPGA-image-processor`, `NN-on-FPGA`, plus a
+couple of unrelated forks/test repos. `FPGA-Snake-game`,
+`X86-Processor`, `RISC-V-processor` do not exist publicly (404) —
+see the `works/` section above before assuming otherwise; check again
+if enough time has passed that Dharma may have pushed them.
 
 ---
 
 ## Open work
 
-0. **`sources/Dharma_Resume.pdf` is still the old resume.** The site
-   links to it everywhere (nav, hero CTA, contact), but it hasn't been
-   replaced with the actual RESUME2026-derived PDF (real contact info,
-   not the sample's placeholders). Get the real filled PDF from Dharma
-   and drop it in at that same path — don't regenerate/retypeset it from
-   scratch unless asked.
-1. Rebuild the five `works/` pages in the new design. Needs real project
-   detail from Dharma first.
-2. Write `blog/fpga-neural-network.html` (see Blog posts above) and add
-   it to `blog.html` and the Writing section of `index.html`.
-3. Add project images for NeuronEase and the TiO2 MIM post — `.shot`
-   and `.shot-grid` are ready, no images exist yet. Compress before
-   committing — GitHub Pages serves them raw.
-4. `blog/p4guard.html` doesn't link to a public repo yet — the P4Guard
-   source hasn't been pushed to GitHub. Once it is (presumably
-   `github.com/dharma925/...`), add a link near the top or bottom of that
-   post. Don't guess the URL before it exists.
-5. Rewrite or retire `xplorations.html` and the `xplorations/` pages.
-   4 years old, describes interests, not work; not linked from current
-   nav but still reachable directly and still cross-links to `about.html`.
-6. Once 1 and 5 are done and nothing links to `about.html` anymore,
-   delete it for real instead of leaving the redirect stub.
+1. **Snake Game / RISC-V / x86** — still Lorem ipsum on their `works/`
+   pages, excluded from Earlier Work's real entries pending real
+   detail. Ask Dharma / check if repos are public yet.
+2. **P4Guard's public repo link** — not added yet, source not pushed.
+3. **The image-processing extension for FCNN on FPGA** — Dharma said
+   (2026-09-01) it's a separate piece of work, link coming. Add it to
+   `blog/fcnn-fpga.html` once linked; flag that the résumé PDF still
+   states this claim unverified against the NN-on-FPGA repo.
+4. Project images for the TiO2 MIM post — `.shot`/`.shot-grid` ready,
+   no images sourced yet (unlike NeuronEase, which now has real ones).
