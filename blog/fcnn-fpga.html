@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="author" content="Dharma Teja Gurram">
-  <meta name="description" content="A fully connected neural network built from Verilog primitives on a Zybo Z7 FPGA, 16-bit fixed point, TensorFlow-trained weights loaded into hardware, extended into an on-chip image pipeline.">
+  <meta name="description" content="A 256-128-10 fully connected digit classifier built from hand-instantiated Verilog neurons on a Zybo Z7, with a real hardware Taylor-series exponential unit behind its softmax stage.">
   <title>FCNN on FPGA — Dharma Teja Gurram</title>
   <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
   <link rel="stylesheet" href="../style.css">
@@ -36,29 +36,50 @@
     <article class="article wrap wrap--read">
       <p class="post-kicker"><span>Project</span><span>FPGA</span><span>Personal project, IIT Mandi</span></p>
       <h1>FCNN on FPGA: a neural network built from Verilog primitives</h1>
-      <p class="standfirst">No neural-network IP core, no HLS. Every adder, multiplier, and neuron in this network is hand-written Verilog, synthesized down to a Zybo Z7 and driven by weights trained in TensorFlow.</p>
+      <p class="standfirst">No neural-network IP core, no HLS. Every multiplier, adder, and neuron in this digit classifier is hand-written Verilog, synthesized for a Zybo Z7, driven by weights trained in TensorFlow.</p>
 
       <div class="prose">
-        <p>Most "neural network on FPGA" projects start from a vendor IP core or an HLS toolchain that compiles C++ down to RTL. This one starts from Verilog primitives — a multiplier, an adder, a neuron built out of both, a dense layer built out of neurons — and composes upward until the composition <em>is</em> the network. The point wasn't to get to a working accelerator the fastest way possible; it was to actually own every stage between a trained model and a bitstream.</p>
+        <p>Most "neural network on FPGA" projects start from a vendor IP core or an HLS toolchain that compiles C++ down to RTL. This one starts from primitives — a multiplier, an adder, a neuron built out of both — and composes upward until the composition <em>is</em> the network: a 256-input, 128-unit hidden layer feeding a 10-unit output layer, classifying digits.</p>
 
-        <h2>Bottom-up composition</h2>
-        <p>The design is a fully connected neural network (FCNN) built on a Zybo Z7 board in Vivado, structured in the same order you'd draw it on a whiteboard:</p>
-        <ul>
-          <li>A <strong>fixed-point multiplier</strong> and <strong>adder</strong> — the network runs in 16-bit fixed point, not float, so the first design decision was where the binary point sits and how much dynamic range that leaves for activations without saturating.</li>
-          <li>A <strong>neuron</strong> — a multiply-accumulate over one input vector against one weight vector, plus a bias add and activation.</li>
-          <li>A <strong>dense layer</strong> — neurons instantiated in parallel across the layer's width, sharing an input bus.</li>
-          <li>The full network — dense layers chained, each stage's output register feeding the next.</li>
-        </ul>
-        <p>Building it this way means every stage is independently testable in isolation before it's ever composed with the next — a multiplier can be checked against known products, a single neuron against a known dot product, well before "does the whole network classify correctly" becomes the question being debugged.</p>
+        <h2>What a neuron actually does here</h2>
+        <p>Each neuron owns its own slice of weights, loaded from a file at startup. On every clock cycle it pulls in one input value and the matching weight, multiplies them, and adds the result into a running accumulator — walking through all 256 inputs one at a time before adding a bias and applying a hardware ReLU: if the accumulated value is positive it passes through, otherwise the neuron outputs zero. One neuron, one shared multiplier and adder, reused 256 times in sequence — small, but slow per-neuron by design.</p>
+
+        <h2>Where the speed actually comes from</h2>
+        <p>What makes the layer fast isn't a faster neuron — it's that the hidden layer doesn't contain one neuron, it contains 128 of them, each hand-instantiated with its own dedicated weight file, all reading the same input bus and firing in parallel on the same clock. Every neuron is doing its own 256-step serial accumulation at the same time as all 127 others. The output layer works the same way, at a smaller scale: 10 neurons, each looking at all 128 hidden-layer outputs. Serial inside a neuron, parallel across a layer — that trade-off is the whole design.</p>
+
+        <figure class="figure">
+<pre class="mermaid">
+flowchart LR
+    IN["Input\n256 values"] --> D0
+    subgraph D0["Dense layer 0 — 128 neurons in parallel"]
+      direction TB
+      N0["neuron"]
+      N1["neuron"]
+      N2["..."]
+    end
+    D0 -->|"128 values"| D1
+    subgraph D1["Dense layer 1 — 10 neurons in parallel"]
+      direction TB
+      M0["neuron"]
+      M1["..."]
+    end
+    D1 -->|"10 class scores"| SM["Softmax stage"]
+    SM --> OUT["Digit (0-9)"]
+</pre>
+          <figcaption class="figure-cap">Fig. 1 — 256 → 128 → 10, all in 16-bit fixed point. Each block of neurons runs in parallel; each individual neuron is a 256- or 128-step serial accumulation.</figcaption>
+        </figure>
 
         <h2>Getting trained weights into hardware</h2>
-        <p>The network was trained in TensorFlow at full precision, then the weights were quantized to 16-bit fixed point and extracted into a flat binary file — no retraining or fine-tuning in the fixed-point domain, just a direct cast. That binary is loaded into block RAM at synthesis/implementation time, so the hardware that comes up on the board is running the exact weights the Python model was trained to produce, just re-expressed in fixed point.</p>
+        <p>The network is trained in TensorFlow at full precision, then quantized to 16-bit fixed point and split into one weight file per neuron, loaded into on-chip memory at simulation/synthesis time. The hardware that comes up on the board is running the same weights the Python model was trained to produce, just re-expressed in fixed point and physically distributed one file per neuron instead of one big weight matrix.</p>
 
-        <h2>Extending it: on-chip image processing</h2>
-        <p>The second half of the project pushed the same hardware into a streaming image pipeline instead of a one-shot classifier: image data streams into the FPGA line-by-line, gets convolved on-chip against the loaded kernel weights as it arrives — no full-frame buffer required before processing starts — and the result streams back out to a Python host, where OpenCV and NumPy handle final rendering and display. Doing the convolution on-chip and rendering off-chip splits the design at its natural boundary: the FPGA does the part that benefits from parallel fixed-point arithmetic, Python does the part that benefits from a mature image library.</p>
+        <h2>Deciding the digit: argmax, and a real hardware exponential</h2>
+        <p>The output layer produces 10 raw scores, one per digit. Picking the winner could be as simple as taking the largest of the 10 — and that's exactly what the decision path does. But the softmax stage does more than that in parallel: it runs each score through a genuine hardware implementation of <code>e^x</code>, built as an iterative Taylor-series expansion — multiply-accumulate a running x/n term into a sum, about eighteen cycles per class — to produce the actual softmax probabilities, not just a ranking. Because softmax is monotonic, the class with the highest raw score is always the class with the highest probability, so the argmax over raw scores and the argmax over true probabilities agree — the Taylor-series unit computes something genuinely more informative than the decision needs, which is a legitimate design call when the probabilities themselves might matter for future work, even if today's decision path doesn't need them.</p>
 
-        <h2>What building it bottom-up actually taught</h2>
-        <p>HLS and IP cores exist precisely because this approach is slow to build. What it buys back is that nothing is a black box: when the classifier's output didn't match the Python reference during bring-up, the bug was traceable to a specific pipeline stage rather than being "somewhere in the accelerator." That kind of traceability — being able to point at the exact register where a value diverges from spec — is the same skill this project shares with verification work more broadly.</p>
+        <h2>What's verified, honestly</h2>
+        <p>Verification depth here is intentionally modest for a personal project: the adder primitive has a real testbench, and the neuron's behavior was checked against a captured simulation waveform — not a formal, end-to-end testbench across the full 256-128-10 network. That's the honest state of it, and it's a smaller claim than "it works," but it's the one the repo actually supports.</p>
+
+        <h2>What's next</h2>
+        <p>There's a further extension of this same idea — streaming image data on-chip and convolving it against a kernel before handing results back to Python — that lives in a separate piece of work, not this repo. Link coming once it's ready to show.</p>
       </div>
 
       <nav class="postnav">
@@ -77,6 +98,23 @@
     ham.addEventListener('click', () => {
       const open = nav.classList.toggle('is-open');
       ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#FFFFFF',
+        primaryTextColor: '#111820',
+        primaryBorderColor: '#0E7C86',
+        lineColor: '#77838F',
+        secondaryColor: '#F6F8FA',
+        tertiaryColor: '#F6F8FA',
+        fontFamily: 'IBM Plex Mono, ui-monospace, monospace',
+        fontSize: '14px'
+      }
     });
   </script>
 </body>
