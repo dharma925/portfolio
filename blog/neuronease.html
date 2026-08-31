@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="author" content="Dharma Teja Gurram">
-  <meta name="description" content="NeuronEase: a memristor crossbar architecture for analog multiply-accumulate in neural-network inference, simulated with the Stanford ReRAM model in Cadence Virtuoso.">
+  <meta name="description" content="NeuronEase: a memristor crossbar carried from a 2×2 SPICE proof to an INT8 CNN doing real MNIST inference, advised by Dr. Srinivasu Bodapati.">
   <title>NeuronEase — Dharma Teja Gurram</title>
   <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
   <link rel="stylesheet" href="../style.css">
@@ -34,9 +34,9 @@
 
   <main id="main">
     <article class="article wrap wrap--read">
-      <p class="post-kicker"><span>Project</span><span>Analog compute</span><span>Final-year project, IIT Mandi</span></p>
+      <p class="post-kicker"><span>Project</span><span>Analog compute</span><span>Final-year project, IIT Mandi · advised by Dr. Srinivasu Bodapati</span></p>
       <h1>NeuronEase: a memristor crossbar for neural-network inference</h1>
-      <p class="standfirst">Doing multiply-accumulate in the analog domain, by letting Ohm's law and Kirchhoff's current law do the arithmetic instead of a digital multiplier array.</p>
+      <p class="standfirst">Doing multiply-accumulate in the analog domain, by letting Ohm's law and Kirchhoff's current law do the arithmetic instead of a digital multiplier array — carried from a 2×2 proof in SPICE to an INT8 CNN reading real handwritten digits.</p>
 
       <div class="prose">
         <p>Neural-network inference is dominated by one operation: multiply-accumulate. A conventional accelerator does this digitally — a grid of multiplier-adder units, clocked, pipelined, power-hungry. NeuronEase was my final-year project exploring the alternative: doing the multiply-accumulate <em>in the analog domain</em>, using the physics of a memristor crossbar array instead of digital logic.</p>
@@ -44,11 +44,74 @@
         <h2>Why a crossbar does MAC for free</h2>
         <p>A memristor crossbar is a grid of resistive memory elements, each one programmable to a conductance that represents a weight. Feed a voltage (the input activation) into a row, and by Ohm's law the current through each memristor at that row is proportional to voltage × conductance — a multiplication, done physically, with no clock cycle. Kirchhoff's current law then sums every current flowing into a column automatically. Row-by-row multiply, column-wise accumulate — the crossbar's wiring <em>is</em> the MAC unit.</p>
 
-        <h2>What I built</h2>
-        <p>The design used the Stanford ReRAM compact model to represent memristor device behavior accurately in simulation, implemented the crossbar and its analog periphery in <strong>Verilog-A</strong>, and ran the design and simulation in <strong>Cadence Virtuoso</strong>. The target was neural-network inference acceleration — mapping trained weights onto the crossbar's conductance states and driving inputs through as analog voltages.</p>
+        <h2>Proving it at 2×2, in SPICE</h2>
+        <p>Before scaling to anything resembling a real network, the first goal was the smallest possible proof: a 2×2 weight matrix, realized as four memristors, verified against the matrix-multiply it was supposed to compute. Programming one memristor to a high-resistance ("off") state and the rest to low-resistance ("on") sets a specific known weight matrix; driving the crossbar's rows with two independent voltage sources and watching the column currents confirms — cycle by cycle, in a transient SPICE simulation in Cadence Virtuoso — that the currents track the matrix-vector product the weights were programmed to represent. That small, verifiable result is what everything after it builds on.</p>
+
+        <h2>Scaling the same idea to a real kernel</h2>
+        <p>The same programming principle extends directly from a toy 2×2 matrix to an actual image-processing kernel: a 3×3 box-blur filter loaded into the crossbar as a weight file, one bit per memristor, and an input image driven through it row by row. The crossbar computes the weighted sum for each output pixel the same way it computed the 2×2 case — just with more terms accumulating into the same column.</p>
+
+        <h2>How inference actually runs</h2>
+        <p>Two phases, every time the crossbar is used for something new: programming, then inference.</p>
+
+        <figure class="figure">
+<pre class="mermaid">
+flowchart LR
+    subgraph Program["1. Program weights"]
+      W["Trained kernel /\nlayer weights"] --> RCD["Row / column\ndecoders"]
+      RCD --> XB[("Memristor\ncrossbar")]
+    end
+    subgraph Infer["2. Run inference"]
+      IN["Input activations"] --> DAC["DACs"]
+      DAC --> XB
+      XB -->|"Ohm's law × KCL"| ADC["ADCs"]
+      ADC --> ACT["Activation /\nnext layer"]
+    end
+    Program -.-> Infer
+</pre>
+          <figcaption class="figure-cap">Fig. 1 — programming sets the crossbar's conductances once; every inference after that is a DAC-in, analog-MAC, ADC-out pass through the same array. (Simplified — the real design also has an image controller, a convolution controller, and per-row/column voltage control around this core.)</figcaption>
+        </figure>
+
+        <h2>Scaling further: an INT8 CNN on a 9×8 crossbar</h2>
+        <p>The final stage of the project was mapping an actual trained CNN onto the crossbar, not just a hand-picked kernel. The network — trained in TensorFlow — is small on purpose: one 3×3 convolutional layer with 12 kernels, a max-pool, and a dense layer down to 10 outputs, 20,410 parameters in total. Quantized to INT8 through TFLite, that model's first-layer kernels and biases are what get programmed onto a 9×8 memristor crossbar, with row and column decoders addressing individual weights and a convolution controller sequencing the kernel across the input image.</p>
+        <p>Going from the earlier 2×2 proof to this stage meant solving problems that a same-sign toy example doesn't have: 8-bit-wide conductance levels instead of a single on/off state per cell, and negative weights — which a crossbar's conductance (always positive) can't represent directly, so the sign has to be handled separately from the magnitude before or after the analog multiply.</p>
+
+        <h2>Results: MNIST through the crossbar</h2>
+        <p>The figures below are the crossbar's own analog output for the first convolutional layer — each one is a real ADC readout from the simulation, not a software reference — reshaped back into an image so it's visible what one trained kernel actually does to a handwritten digit.</p>
+
+        <div class="shot-grid">
+          <figure>
+            <img src="../sources/neuronease/kernel0-digit0.png" alt="Kernel 0's crossbar output next to the original MNIST digit 0">
+            <figcaption>Kernel 0 on digit "0"</figcaption>
+          </figure>
+          <figure>
+            <img src="../sources/neuronease/kernel1-digit0.png" alt="Kernel 1's crossbar output next to the original MNIST digit 0">
+            <figcaption>Kernel 1 on the same digit — a different learned kernel, a different response</figcaption>
+          </figure>
+          <figure>
+            <img src="../sources/neuronease/digit1.png" alt="Crossbar output next to the original MNIST digit 1">
+            <figcaption>Digit "1"</figcaption>
+          </figure>
+          <figure>
+            <img src="../sources/neuronease/digit2.png" alt="Crossbar output next to the original MNIST digit 2">
+            <figcaption>Digit "2"</figcaption>
+          </figure>
+          <figure>
+            <img src="../sources/neuronease/digit3.png" alt="Crossbar output next to the original MNIST digit 3">
+            <figcaption>Digit "3"</figcaption>
+          </figure>
+          <figure>
+            <img src="../sources/neuronease/digit4.png" alt="Crossbar output next to the original MNIST digit 4">
+            <figcaption>Digit "4"</figcaption>
+          </figure>
+        </div>
+
+        <p>Two different kernels on the same digit produce visibly different responses — exactly what you'd want from independently-trained feature detectors, and a real (if indirect) confirmation that the analog hardware is computing something close enough to the trained digital weights to preserve that distinction.</p>
+
+        <h2>What it costs in cycles</h2>
+        <p>Programming a 3×3 kernel into the crossbar takes 9 clock cycles — one per weight, since each is written to a separate memristor column. Running one full 28×28 image through takes roughly 9,000 cycles, which works out to about 12 cycles per pixel: 9 for fetching the relevant kernel weights, 1 for the analog compute itself, 1 for ADC sampling, and 1 for syncing the result back into digital storage. The compute step is the one part of that count the crossbar makes nearly free — it's the surrounding digital bookkeeping that dominates.</p>
 
         <h2>Where analog MAC gets hard</h2>
-        <p>The appeal of a crossbar is that the array does the arithmetic passively. The hard part is everything around it: memristor devices don't program to an exact conductance and drift over time, so weight precision is limited by device variability rather than by how many bits you're willing to spend. Peripheral circuits — DACs to drive rows, TIAs or ADCs to read columns — have to convert in and out of the analog domain without eating the energy savings the crossbar was supposed to provide. Getting the compact model to track real device non-idealities closely enough for the simulation to mean something was a large part of the work.</p>
+        <p>The appeal of a crossbar is that the array does the arithmetic passively. The hard part is everything around it: memristor devices don't program to an exact conductance and drift over time, so weight precision is limited by device variability rather than by how many bits you're willing to spend. Peripheral circuits — DACs to drive rows, ADCs to read columns — have to convert in and out of the analog domain without eating the energy savings the crossbar was supposed to provide. Getting the compact model to track real device non-idealities closely enough for the simulation to mean something was a large part of the work.</p>
 
         <h2>Where it sits</h2>
         <p>This project is what pulled me toward verification and hardware quality more broadly — modeling a device accurately enough to trust the simulation is, in a lot of ways, the same discipline as verifying that a design behaves as specified before it reaches silicon.</p>
@@ -71,6 +134,23 @@
     ham.addEventListener('click', () => {
       const open = nav.classList.toggle('is-open');
       ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#FFFFFF',
+        primaryTextColor: '#111820',
+        primaryBorderColor: '#0E7C86',
+        lineColor: '#77838F',
+        secondaryColor: '#F6F8FA',
+        tertiaryColor: '#F6F8FA',
+        fontFamily: 'IBM Plex Mono, ui-monospace, monospace',
+        fontSize: '14px'
+      }
     });
   </script>
 </body>
