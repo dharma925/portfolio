@@ -1,0 +1,4 @@
+# Resume LaTeX source stays local -- may contain internal-sounding tool
+# names / metrics that are fine on a resume handed to a named recruiter
+# but shouldn't be browsable in this repo's public source.
+sources/resume.tex

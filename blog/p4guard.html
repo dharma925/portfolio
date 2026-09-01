@@ -37,6 +37,7 @@
       <p class="post-kicker"><span>Project</span><span>CI automation · Perforce</span><span>Personal project</span></p>
       <h1>P4Guard: a self-enforcing Perforce CI platform</h1>
       <p class="standfirst">A local Perforce Helix Core server that rejects bad changelists at <code>p4 submit</code>, kicks off its own CI, and reports on itself — built to prove the front-end integration skillset, not just describe it.</p>
+      <p><a class="readmore" href="https://github.com/dharma925/p4guard" target="_blank" rel="noopener">View the source on GitHub →</a></p>
 
       <div class="prose">
         <p>Most portfolio projects that claim "CI/CD experience" are a YAML file and a screenshot. This one is a real, working system: a genuine local Perforce Helix Core server, provisioned entirely from spec files, with Python triggers that actually reject bad submits, a CI orchestrator that actually runs, and a dashboard built from actual run history. Everything in this post is something you can run yourself and watch happen — there's a link to exactly how, at the bottom.</p>
@@ -105,7 +106,7 @@ flowchart LR
         <p>The honest line to draw: the Perforce server, its streams/triggers/protections, and every submit/login/label operation are completely real. The EDA tools are necessarily mocked — but structured so that swapping a mock for the real licensed tool is a one-line change to the command being run, not a rewrite of the orchestration, farm integration, or trigger logic around it.</p>
 
         <h2>Try it yourself</h2>
-        <p>The full step-by-step guide — prerequisites, bootstrap, and a live walkthrough of the demo (a lint violation getting rejected, fixed, accepted, and auto-triggering CI, in that order) — is in the repository's README. In short:</p>
+        <p>The full step-by-step guide — prerequisites, bootstrap, and a live walkthrough of the demo (a lint violation getting rejected, fixed, accepted, and auto-triggering CI, in that order) — is in <a href="https://github.com/dharma925/p4guard#readme" target="_blank" rel="noopener">the repository's README</a>. In short:</p>
 <pre>python -m venv .venv &amp;&amp; .venv/Scripts/pip install -r requirements.txt
 pytest tests -q
 
