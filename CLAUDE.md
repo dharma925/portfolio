@@ -242,11 +242,32 @@ into the postnav chain at the right point.
                 UCD3138 digital power supply controller
     Education   B.Tech EE (Hons), IIT Mandi, 2020–2024, CGPA 8.68
 
-    Résumé PDF  sources/Dharma_Resume_DVAI.pdf  ← current, real, linked
-                site-wide as of 2026-08-31. An older
-                sources/Dharma_Resume_CLG_INTERN.pdf also exists
-                (renamed from the original tracked file) but nothing
-                on the site links to it.
+    Résumé PDFs (two, as of 2026-09-03 — see "Résumé section" below):
+                sources/Dharma_Resume_DVAI.pdf   — Hardware & Silicon track
+                sources/Dharma_Resume_DVAIC.pdf  — AI × Hardware track
+                An older sources/Dharma_Resume_CLG_INTERN.pdf also
+                exists (renamed from the original tracked file) but
+                nothing on the site links to it.
+
+### Résumé section (index.html#resume)
+
+Added 2026-09-03: two résumé tracks, not one. DVAI was already
+submitted for a front-end integration/EDA role; DVAIC is for an
+"Architect — AI-Powered Performance Verification Automation" role and
+leads with the AI/agentic-systems framing (reordered skills/summary,
+MACTrace listed first under Projects, "Multi-Agent Workflow Playground"
+instead of "State-Aware Agentic Workflow Orchestrator" as the first TI
+bullet — otherwise the same six sub-bullets).
+
+Every résumé link site-wide — the nav `.btn`, the hero's "Download
+résumé" button, and every blog/project page's nav — now points at
+`index.html#resume` (or `../index.html#resume` from `blog/`), matching
+the existing pattern for the `About` nav link. That section is a
+`.caps` grid of two `.cap.cap--resume` cards (Hardware & Silicon / AI ×
+Hardware), each with its own real PDF link and `target="_blank"`. Only
+those two links in the whole site open a PDF directly — everything else
+routes through the picker. If a 3rd track is ever added, follow this
+same pattern rather than reintroducing a single default download link.
 
 GitHub repos that actually exist publicly under dharma925 (checked
 2026-08-31): `portfolio`, `FPGA-image-processor`, `NN-on-FPGA`, plus a
