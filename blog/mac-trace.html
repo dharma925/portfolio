@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="MACTrace: a C++17 functional and performance model of a configurable CNN accelerator — a golden-model/cycle-model split, bit-exact against an independent Python reference, and a measured MAC-utilization bottleneck.">
+  <title>MACTrace — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../sources/Dharma_Resume_DVAI.pdf" target="_blank" rel="noopener">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Project</span><span>Hardware / ML accelerator modeling</span><span>Personal project</span></p>
+      <h1>MACTrace: a C++ model of a CNN accelerator, before any RTL exists</h1>
+      <p class="standfirst">Most "CNN accelerator" side projects are really just CNN inference written in C++. This one models the hardware instead — a configurable MAC array, an accumulator, an on-chip buffer — and keeps <em>does it compute the right answer</em> strictly separate from <em>how many cycles does it cost</em>, the same split a real accelerator architecture team draws before RTL exists.</p>
+
+      <div class="prose">
+        <p><strong>Status:</strong> Phases 1–2 complete — a working functional model, real trained and quantized weights, bit-exact Python↔C++ validation, and a measured performance model. Phase 3 (multi-configuration architecture sweep) and Phase 4 (dataflow optimization) are still in progress.</p>
+
+        <h2>Two models, kept deliberately separate</h2>
+        <ul>
+          <li><strong>Functional model</strong> — does the accelerator compute the correct answer? No notion of time at all. The same role a golden reference model plays in a verification flow.</li>
+          <li><strong>Performance model</strong> — given N MAC units, a buffer size, and a tiling strategy, how many cycles does this workload cost, and how well does it use the hardware? Explicitly <em>not</em> claimed to be RTL-cycle-accurate — a fast, documented, architecturally-informed estimate, the kind of model that lets you compare design points cheaply before committing to RTL.</li>
+        </ul>
+
+        <h2>Architecture</h2>
+        <p>The target pipeline, and roughly how each stage maps to C++:</p>
+
+        <figure class="figure">
+<pre class="mermaid">
+flowchart LR
+    IN["Input\nINT8 image"] --> CNN["CNN layers\nConv -> ReLU -> Pool -> FC\n(ops.hpp)"]
+    CNN --> TILE["Tiled execution\nim2col-style GEMM lowering"]
+    subgraph MAC["Accelerator"]
+      direction TB
+      PE["MAC array (N x N)\nrows x cols, configurable"]
+      ACC["Accumulator\nINT32 partial sums"]
+      BUF["SRAM buffer\nLocalBuffer&lt;T&gt;, capacity-bounded"]
+      PE --> ACC --> BUF
+    end
+    TILE --> PE
+    BUF --> OUT["Output\nPrediction"]
+</pre>
+          <figcaption class="figure-cap">Fig. 1 — input to prediction, with the MAC array / accumulator / SRAM buffer as the modeled hardware core.</figcaption>
+        </figure>
+
+        <p>Four pieces do most of the work:</p>
+        <ul class="caps">
+          <li class="cap">
+            <h3>Tensor&lt;T&gt;</h3>
+            <p>Row-major, shape/stride-based storage — a software stand-in for what sits in an on-chip buffer, with indexing that plays the role of an address-generation unit.</p>
+          </li>
+          <li class="cap">
+            <h3>MacArray / MacUnit</h3>
+            <p>A configurable rows×cols grid of PEs, each a multiply-accumulate plus a register — the software analogue of instantiating N identical hardware modules through a generate loop.</p>
+          </li>
+          <li class="cap">
+            <h3>LocalBuffer&lt;T&gt;</h3>
+            <p>Capacity-bounded on-chip storage a tile must be staged into before compute — an SRAM capacity constraint that's actually enforced, not just commented.</p>
+          </li>
+          <li class="cap">
+            <h3>PerfCounters</h3>
+            <p>PMU-style free-running counters — MAC ops, cycles, buffer traffic, utilization — read and reset at layer boundaries, the same pattern real performance-monitoring hardware uses.</p>
+          </li>
+        </ul>
+
+        <h2>Results — measured, not assumed</h2>
+        <p>A small CNN (Conv → ReLU → MaxPool → FC) was trained on MNIST in PyTorch, post-training quantized to INT8, exported into a custom binary format, and run through the C++ model. Every number below comes from an actual run, not an estimate:</p>
+        <ul>
+          <li><strong>96.46%</strong> float32 test accuracy, <strong>96.43%</strong> INT8 test accuracy across 10,000 images — quantization cost almost nothing here.</li>
+          <li><strong>0</strong> — the maximum logit difference between the C++ model and an independently-implemented NumPy reference (not a shared code path, a second implementation), across 20 test images and 10 output classes each.</li>
+          <li><strong>100%</strong> MAC utilization on the conv layer, versus <strong>20.8%</strong> on the FC layer.</li>
+          <li><strong>11,662</strong> estimated cycles for a full inference pass on a 4×4 MAC array.</li>
+        </ul>
+
+        <table>
+          <tr><th>Layer</th><th>MAC ops</th><th>Utilization</th><th>Total cycles</th></tr>
+          <tr><td>conv1 (8 ch, 3×3)</td><td>56,448</td><td>100.0%</td><td>5,880</td></tr>
+          <tr><td>fc (1568 → 10)</td><td>15,680</td><td>20.8%</td><td>5,782</td></tr>
+          <tr><td>total</td><td>72,128</td><td>54.8%</td><td>11,662</td></tr>
+        </table>
+
+        <p>The finding underneath those numbers: the fully-connected layer costs almost as many total cycles as the convolution layer — 5,782 versus 5,880 — despite doing roughly a quarter as much useful work per cycle on average, because mapping a single-vector FC layer onto a spatial MAC array only ever fills one of N rows. It's a concrete demonstration that adding more MAC units doesn't automatically improve throughput; utilization depends on whether the workload's shape can actually fill the array.</p>
+
+        <h2>The cycle model, documented rather than implied</h2>
+        <p>Claiming RTL-level accuracy a model doesn't have is worse than being upfront about what it approximates:</p>
+        <pre><code>// per GEMM tile of shape (R, K) x (K, C) -&gt; (R, C):
+compute_cycles = K                                 // one MAC/cycle per active PE
+load_cycles    = ceil(R*K / bw) + ceil(K*C / bw)   // sequential tile staging
+tile_cycles    = load_cycles + compute_cycles
+
+mac_utilization = mac_ops / (mac_rows * mac_cols * compute_cycles)</code></pre>
+        <p>No pipeline stalls, no load/compute overlap, no off-chip-vs-on-chip distinction — a fast, relative model for comparing architectural configurations, the kind a team builds before RTL exists, not a substitute for RTL simulation.</p>
+
+        <h2>Why the golden-model split matters</h2>
+        <p>Checking the C++ output against an independently-implemented reference — not the same code path re-run, a second implementation — is the same discipline as comparing a DUT against a golden model in a verification testbench: if both implementations agree on every one of 200 output logits by chance, that's a much weaker claim than a maximum diff of exactly zero. Keeping functional correctness and cycle-count estimation as two separate models, checked separately, is what makes each one trustworthy on its own terms instead of one hiding the other's mistakes.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="fcnn-fpga.html">← FCNN on FPGA</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#FFFFFF',
+        primaryTextColor: '#111820',
+        primaryBorderColor: '#0E7C86',
+        lineColor: '#77838F',
+        secondaryColor: '#F6F8FA',
+        tertiaryColor: '#F6F8FA',
+        fontFamily: 'IBM Plex Mono, ui-monospace, monospace',
+        fontSize: '14px'
+      }
+    });
+  </script>
+</body>
+</html>
