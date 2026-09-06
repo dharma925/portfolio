@@ -16,14 +16,17 @@ When there's a choice about what to emphasise, emphasise that.
 
 ---
 
-## Current state (as of 2026-09-01)
+## Current state (as of 2026-09-01, partially updated 2026-09-06 —
+see the note on the postnav chain and the two new bullets below;
+this section's prose wasn't otherwise re-audited)
 
     index.html      home — hero, spec panel, stack, capabilities,
                     experience, projects, writing, about, contact
-    projects.html   Featured (P4Guard, NeuronEase, TiO2 MIM, FCNN) +
-                    Earlier work (same .entry format as Featured, not
-                    a compact list — see "Earlier work format" below)
-    blog.html       writing index — 12 posts (see Blog posts below)
+    projects.html   Featured (MACTrace, AXI4-Lite/APB Bridge, P4Guard,
+                    NeuronEase, TiO2 MIM, FCNN) + Earlier work (same
+                    .entry format as Featured, not a compact list —
+                    see "Earlier work format" below)
+    blog.html       writing index — 14 posts (see Blog posts below)
     blog/*.html     the posts themselves
     style.css       all styling, shared by every page (repo root, NOT
                     assets/ — that path never existed in this repo)
@@ -191,7 +194,11 @@ Dharma rather than filling the gap with plausible-sounding specifics.
 the bottom of each post) runs:
 `p4guard → agentic-orchestrator → regression-lifecycle-manager →
 semantic-debug-agent → workspace-health-checker → release-quality-gate →
-chatops-orchestrator → neuronease → mim-fabrication → fcnn-fpga`
+chatops-orchestrator → neuronease → mim-fabrication → fcnn-fpga →
+mac-trace → axi-apb-bridge`
+(this doc previously stopped the chain at `fcnn-fpga`, but `mac-trace`
+was already wired in after it in the actual files — fixed here
+2026-09-06 when `axi-apb-bridge` was appended.)
 `pre-submit-quality-gates` and `regression-reports` are a separate
 two-post chain (essays, not in the project chain above).
 
@@ -221,6 +228,30 @@ disclosing anything about TI:
   Verification depth stated honestly: only `adder` has a real testbench.
   See Content rule #2 re: the image-processing extension NOT being in
   this one.
+- `blog/mac-trace.html` — C++17 CNN accelerator model, golden functional
+  model kept separate from a documented cycle model, bit-exact (max
+  logit diff 0) against an independent NumPy reference on 20 MNIST
+  images. Real measured numbers: 96.46%/96.43% float32/INT8 accuracy,
+  100%/20.8% MAC utilization (conv vs. FC layer), 11,662 estimated
+  cycles on a 4×4 array. (Not previously listed in this doc, though the
+  file was already live — added here 2026-09-06.)
+- `blog/axi-apb-bridge.html` — added 2026-09-06. AXI4-Lite-to-APB
+  bridge (single-outstanding FSM, address decode in the bridge, SLVERR
+  on out-of-range) plus an original GPT timer peripheral (RW/RO/W1C/
+  staged-write register mix). Hand-rolled UVM-styled SystemVerilog env
+  (no real `uvm_pkg` — Verilator can't compile Accellera's uvm-core;
+  said plainly on the post) — scoreboard cross-checks AXI, APB, and an
+  independent reference model. 8/8 tests, 0 scoreboard errors, 94%/89%
+  coverage (random/combined-directed), 6 SVA, real waveform image at
+  `sources/axi-apb-bridge/waveform.png`. Two real bugs documented on
+  the post: a blocking/nonblocking assignment race in the testbench,
+  and a genuine Verilator convergence bug confirmed on two Verilator
+  versions (5.020 packaged, 5.038 from-source) before working around
+  it. Source: `github.com/dharma925/Basic-Processor`, subdirectory
+  `axi4lite_apb_bridge/`, branch `claude/axi4-lite-apb-bridge-uvm-q6lmq4`
+  — **not yet merged to that repo's main**, so the post and this doc
+  link the branch path directly; re-check whether it's been merged
+  before assuming the branch link is still needed.
 
 To add a post: copy an existing file in `blog/` as a template (match its
 nav block exactly), then add an entry to `blog.html`'s list and wire it
@@ -290,3 +321,9 @@ if enough time has passed that Dharma may have pushed them.
    states this claim unverified against the NN-on-FPGA repo.
 4. Project images for the TiO2 MIM post — `.shot`/`.shot-grid` ready,
    no images sourced yet (unlike NeuronEase, which now has real ones).
+5. **AXI4-Lite to APB Bridge's branch not merged** — `blog/axi-apb-bridge.html`
+   links `github.com/dharma925/Basic-Processor` on branch
+   `claude/axi4-lite-apb-bridge-uvm-q6lmq4`, not `main`. Check whether
+   it's been merged since 2026-09-06 and repoint the link (and the
+   entry in `projects.html`) to the plain repo/subdirectory path once
+   it has, rather than leaving a working-branch link live indefinitely.

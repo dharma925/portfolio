@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Dharma Teja Gurram">
+  <meta name="description" content="A single-outstanding AXI4-Lite-to-APB bridge and an original register-mapped timer peripheral, verified with a hand-rolled UVM-styled SystemVerilog environment — driver, monitor, scoreboard, a reference model, and SVA, entirely on open-source tools.">
+  <title>AXI4-Lite to APB Bridge — Dharma Teja Gurram</title>
+  <link rel="shortcut icon" href="../sources/icon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a href="#main" class="skip">Skip to content</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <a class="mark" href="../index.html">Dharma Teja Gurram</a>
+      <button class="ham" aria-label="Toggle menu" aria-expanded="false" id="ham">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../projects.html">Projects</a>
+        <a href="../blog.html" aria-current="page">Writing</a>
+        <a href="../index.html#about">About</a>
+        <a class="btn" href="../index.html#resume">Résumé</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="article wrap wrap--read">
+      <p class="post-kicker"><span>Project</span><span>RTL Verification · AMBA</span><span>Personal project</span></p>
+      <h1>AXI4-Lite to APB Bridge: a UVM-styled environment on open-source tools</h1>
+      <p class="standfirst">A single-outstanding AXI4-Lite-to-APB bridge and an original APB timer peripheral, checked against an independent reference model — not data echo. Driver, monitor, scoreboard, and SVA, built without a licensed simulator, including two real bugs found and fixed along the way.</p>
+      <p><a class="readmore" href="https://github.com/dharma925/Basic-Processor/tree/claude/axi4-lite-apb-bridge-uvm-q6lmq4/axi4lite_apb_bridge" target="_blank" rel="noopener">View the source on GitHub →</a></p>
+
+      <div class="prose">
+        <p>An AXI-to-APB bridge is a small, unglamorous piece of almost every ARM-based SoC: it drops a fast system bus down to the slow, simple peripheral bus that register-mapped blocks — timers, GPIO, UARTs — actually sit on. Small enough to finish properly, real enough to have genuine protocol corner cases. That combination is the point: a project sized to be completely verified rather than a large one left half-built.</p>
+
+        <h2>The DUT: a bridge, and an original peripheral behind it</h2>
+        <p>The bridge itself is a single-outstanding AXI4-Lite slave / APB3 master FSM, written from scratch: <code>IDLE → APB_SETUP → APB_ACCESS → RESP</code>, with the address decode done in the bridge, not the peripheral. An address outside the peripheral's mapped window never reaches APB at all — the bridge returns SLVERR directly, PSEL is never asserted.</p>
+
+        <p>Behind it sits an original peripheral, not vendor IP: a GPT (Generic Programmable Timer) with a five-register map deliberately chosen to exercise every kind of register behavior a real block has — plain read/write, read-only status, write-1-to-clear, and a write that's staged rather than immediate:</p>
+
+        <table>
+          <tr><th>Offset</th><th>Name</th><th>Access</th><th>Behavior</th></tr>
+          <tr><td>0x00</td><td>CTRL</td><td>RW</td><td>EN starts a count, MODE selects one-shot vs. periodic</td></tr>
+          <tr><td>0x04</td><td>STATUS</td><td>RO / W1C</td><td>BUSY is read-only; TO clears only on a write of 1, never 0</td></tr>
+          <tr><td>0x08</td><td>LOAD</td><td>RW</td><td>a write while BUSY is <em>staged</em>, applied only at the next reload — and costs one APB wait state</td></tr>
+          <tr><td>0x0C</td><td>COUNT</td><td>RO</td><td>live down-counter</td></tr>
+          <tr><td>0x10</td><td>ID</td><td>RO, constant</td><td>0xC0FF_EE01</td></tr>
+        </table>
+
+        <p>That LOAD-while-BUSY case is the one wait-state condition in the whole design, and it's there on purpose: a wait state with no functional reason behind it is just an arbitrary delay in a testbench. This one exists because writing a live reload value needs a real cycle to stage safely without corrupting an in-flight count — a genuine reason to make the bridge's wait-state handling actually work, not just compile.</p>
+
+        <figure class="figure">
+<pre class="mermaid">
+flowchart LR
+    M["AXI4-Lite master\n(TB driver)"] -->|"AWADDR·WDATA"| B
+    B["axi4lite_apb_bridge\nsingle-outstanding FSM"] -->|"PSEL·PENABLE·PWRITE·PADDR·PWDATA"| T["gpt_timer\nAPB slave, original design"]
+    T -->|"PRDATA·PREADY·PSLVERR"| B
+    B -->|"BRESP·RDATA·RRESP"| M
+    B -.->|"out-of-range addr:\nSLVERR direct, APB never touched"| M
+</pre>
+          <figcaption class="figure-cap">Fig. 1 — the bridge owns address decode; only an in-range access ever reaches APB.</figcaption>
+        </figure>
+
+        <h2>A scoreboard that checks against an independent model, not an echo</h2>
+        <p>The easy version of this testbench just checks that whatever goes in on AXI comes back out on APB unchanged. That proves the wires are connected; it doesn't prove the timer's actual behavior is correct. The scoreboard here cross-checks three independent sources instead: what the AXI monitor observed, what the APB monitor observed, and what a small behavioral reference model — written from the register-map spec, not copied from the RTL — predicts the timer's state should be. The reference model watches the same live APB signals the DUT does and ticks forward every clock on its own, so it stays cycle-accurate without ever touching the RTL's internals.</p>
+
+        <p>Seven directed sequences (reset-value readback, the ID constant, CTRL/LOAD write-then-readback, one-shot count-to-zero, the W1C behavior including confirming a write of 0 does nothing, periodic reload, LOAD-while-BUSY) plus one constrained-random sequence all run through that same scoreboard. Six SystemVerilog assertions check APB protocol legality directly — PENABLE never without PSEL, address held through a wait state, PENABLE dropping the cycle after a completed transfer, no X on control signals mid-access.</p>
+
+        <h2>Two real bugs, not zero</h2>
+        <p>Both of these were found and fixed, not designed in as demo material:</p>
+        <ul>
+          <li><strong>A blocking-vs-nonblocking assignment race.</strong> The first testbench pattern drove <code>AWVALID</code> and sampled <code>AWREADY</code> immediately after the same <code>@(posedge clk)</code> — a classic race between the testbench's own update and the DUT's same-edge registered update, with no clocking block to arbitrate it. It reproduced as a full driver hang. The fix: sample readiness at <code>negedge</code> (safely mid-cycle) and drive stimulus a small delta after <code>posedge</code>, never exactly on it.</li>
+          <li><strong>A genuine simulator bug.</strong> A class-based driver whose task takes a <code>virtual interface</code> parameter and does any real procedural logic against its fields — even just reading several handshake signals with an <code>if</code> — corrupted the whole design's combinational convergence in Verilator, aborting with <code>Input combinational region did not converge</code>. It reproduced even when that task was never called, and was confirmed on two separate Verilator builds (the packaged 5.020 and a from-source 5.038) before ruling out a version fluke. The workaround: <code>drive_write()</code>/<code>drive_read()</code>/<code>monitor_loop()</code> live inside the interface files themselves, called only through the virtual handle, never taking one as a parameter.</li>
+        </ul>
+
+        <h2>No real <code>uvm_pkg</code> — said plainly, not hidden</h2>
+        <p>The verification architecture is standard UVM shape — sequencer, driver, monitor, scoreboard, analysis ports, a <code>+TEST=</code> selector standing in for <code>+UVM_TESTNAME</code> — but it runs on hand-rolled base classes, not the real Accellera library. The actual <code>uvm-core</code> was cloned and tried first: it fails to compile on Verilator with a documented, longstanding gap in forward-referencing nested parameterized classes, not something fixable from this side. Rather than burn hours patching a simulator, the same methodology was implemented directly on Verilator's native SystemVerilog class support. Porting the environment onto a real <code>uvm_pkg</code> on a licensed simulator later is mostly a rename of the base classes — the driver/monitor/scoreboard logic above them barely changes.</p>
+
+        <figure class="shot">
+          <img src="../sources/axi-apb-bridge/waveform.png" alt="Waveform showing an AXI4-Lite write and read crossing to APB and back, with AWVALID/AWREADY, PSEL/PENABLE/PWRITE, and BVALID/RVALID all annotated">
+          <figcaption>An AXI write and read crossing to APB and back, rendered from the captured VCD (no X server in the build environment for a live GTKWave screenshot).</figcaption>
+        </figure>
+
+        <h2>Results</h2>
+        <ul>
+          <li><strong>8 / 8</strong> tests passing, <strong>0</strong> scoreboard errors, run from a clean rebuild via a single <code>make sim</code>.</li>
+          <li><strong>94%</strong> functional coverage on the random test alone, <strong>89%</strong> combined across all directed tests (hand-rolled coverage bins — Verilator doesn't implement <code>covergroup</code>/<code>coverpoint</code> at all, so this is tracked directly rather than with real SystemVerilog coverage constructs).</li>
+          <li>Entirely open-source toolchain — Verilator, Icarus Verilog, GTKWave — no EDA license needed to build, run, or demo it.</li>
+        </ul>
+
+        <h2>What's next</h2>
+        <p>Two extensions are planned but not built yet, so they're named here rather than folded into the claims above: porting the bridge from APB to AHB-Lite (closer to AMBA's actual high-speed tier — APB is deliberately the low-speed side of the family), and an original register-mapped Ethernet-lite MAC peripheral alongside the timer, to exercise multi-slave decode on the same bus.</p>
+      </div>
+
+      <nav class="postnav">
+        <a href="mac-trace.html">← MACTrace</a>
+      </nav>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap"><p>© 2026 Dharma Teja Gurram · Bengaluru, India</p></div>
+  </footer>
+
+  <script>
+    const ham = document.getElementById('ham');
+    const nav = document.getElementById('nav');
+    ham.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      ham.setAttribute('aria-expanded', open);
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#FFFFFF',
+        primaryTextColor: '#111820',
+        primaryBorderColor: '#0E7C86',
+        lineColor: '#77838F',
+        secondaryColor: '#F6F8FA',
+        tertiaryColor: '#F6F8FA',
+        fontFamily: 'IBM Plex Mono, ui-monospace, monospace',
+        fontSize: '14px'
+      }
+    });
+  </script>
+</body>
+</html>
